@@ -25,18 +25,6 @@ impl SettingsApp {
         }
     }
 
-    fn file_button_label(&self) -> String {
-        let path_str = self.current.keyboard_config_path.trim();
-        if path_str.is_empty() {
-            "Open file…".to_string()
-        } else {
-            Path::new(path_str)
-                .file_name()
-                .and_then(|s| s.to_str())
-                .unwrap_or(path_str)
-                .to_string()
-        }
-    }
 
     fn handle_picked_file(&mut self, picked: String) {
         self.current.keyboard_config_path = picked;
@@ -104,26 +92,24 @@ impl eframe::App for SettingsApp {
                         .spacing([25.0, 14.0])
                         .show(ui, |ui| {
                             ui.label("Keyboard info JSON");
-                            ui.add_enabled_ui(
-                                self.current.keyboard_config_path.trim().is_empty(),
-                                |ui| {
-                                    if ui
-                                        .add_sized(
-                                            ui.available_size(),
-                                            egui::Button::new(self.file_button_label()),
-                                        )
-                                        .clicked()
-                                    {
-                                        if let Some(path) = rfd::FileDialog::new().pick_file() {
-                                            self.handle_picked_file(path.display().to_string());
-                                        }
-                                    };
-                                },
+                            ui.add_sized(
+                                ui.available_size(),
+                                egui::TextEdit::singleline(&mut self.current.keyboard_config_path),
                             );
                             ui.end_row();
 
                             ui.label("Layout");
-                            ui.add_enabled_ui(!self.layout_names.is_empty(), |ui| {
+                            if self.layout_names.is_empty() {
+                                let enabled = !self.current.keyboard_config_path.trim().is_empty();
+                                ui.add_enabled_ui(enabled, |ui| {
+                                    if ui
+                                        .add_sized(ui.available_size(), egui::Button::new("Load layouts..."))
+                                        .clicked()
+                                    {
+                                        self.handle_picked_file(self.current.keyboard_config_path.trim().to_string());
+                                    }
+                                });
+                            } else {
                                 egui::ComboBox::from_id_salt("layout_combo")
                                     .width(ui.available_width())
                                     .selected_text(self.current.layout_name.as_str())
@@ -136,7 +122,7 @@ impl eframe::App for SettingsApp {
                                             );
                                         }
                                     });
-                            });
+                            }
                             ui.end_row();
 
                             let position_label = self.current.position.to_string();
@@ -196,7 +182,7 @@ impl eframe::App for SettingsApp {
                     ui.add_space(20.0);
                     ui.checkbox(&mut self.current.save_settings, "Remember settings");
                     ui.add_space(5.0);
-                    ui.add_enabled_ui(!self.current.keyboard_config_path.is_empty(), |ui| {
+                    ui.add_enabled_ui(!self.layout_names.is_empty(), |ui| {
                         if ui
                             .add_sized([90.0, 28.0], egui::Button::new("Start"))
                             .clicked()
