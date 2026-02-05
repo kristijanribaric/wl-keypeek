@@ -1,13 +1,13 @@
-use crate::keycode_labels::basic::get_basic_keycode_label;
+use crate::keycode_labels::basic::get_basic_layout_key;
 use crate::keycode_labels::constants::*;
-use crate::keycode_labels::keycode_label::{KeycodeKind, KeycodeLabel};
+use crate::layout_key::{KeycodeKind, Label, LayoutKey};
 
-pub fn get_advanced_keycode_label(keycode_bytes: u16) -> Option<KeycodeLabel> {
+pub fn get_advanced_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
     match keycode_bytes {
         input_bytes if QK_MODS.contains(&input_bytes) => {
             let keycode = input_bytes & 0xff;
-            let keycode_str = get_basic_keycode_label(keycode)
-                .and_then(|k| k.long)
+            let keycode_str = get_basic_layout_key(keycode)
+                .map(|k| k.tap.full)
                 .unwrap_or_else(|| format!("0x{:02X}", keycode));
 
             let input_modifiers = input_bytes & 0x1f00;
@@ -17,8 +17,8 @@ pub fn get_advanced_keycode_label(keycode_bytes: u16) -> Option<KeycodeLabel> {
                 .iter()
                 .find(|(_, v)| *v == input_modifiers)
             {
-                return Some(KeycodeLabel {
-                    long: Some(format!("{}({})", name, keycode_str)),
+                return Some(LayoutKey {
+                    tap: Label::new(format!("{}({})", name, keycode_str)),
                     kind: KeycodeKind::Modifier,
                     ..Default::default()
                 });
@@ -62,8 +62,8 @@ pub fn get_advanced_keycode_label(keycode_bytes: u16) -> Option<KeycodeLabel> {
                     nested_mods.push(')');
                 }
 
-                return Some(KeycodeLabel {
-                    long: Some(nested_mods),
+                return Some(LayoutKey {
+                    tap: Label::new(nested_mods),
                     kind: KeycodeKind::Modifier,
                     ..Default::default()
                 });
@@ -78,12 +78,12 @@ pub fn get_advanced_keycode_label(keycode_bytes: u16) -> Option<KeycodeLabel> {
             let mod_str = mod_value_to_string(mod_value);
 
             let keycode = (remainder & 0xFF) as u8;
-            let keycode_str = get_basic_keycode_label(keycode as u16)
-                .and_then(|k| k.long)
+            let keycode_str = get_basic_layout_key(keycode as u16)
+                .map(|k| k.tap.full)
                 .unwrap_or_else(|| format!("0x{:02X}", keycode));
 
-            Some(KeycodeLabel {
-                long: Some(format!("MT({},{})", mod_str, keycode_str)),
+            Some(LayoutKey {
+                tap: Label::new(format!("MT({},{})", mod_str, keycode_str)),
                 kind: KeycodeKind::Modifier,
                 ..Default::default()
             })
@@ -98,8 +98,8 @@ pub fn get_advanced_keycode_label(keycode_bytes: u16) -> Option<KeycodeLabel> {
             let mod_value = remainder & mask;
             let mod_str = mod_value_to_string(mod_value);
 
-            Some(KeycodeLabel {
-                long: Some(format!("LM({},{})", layer, mod_str)),
+            Some(LayoutKey {
+                tap: Label::new(format!("LM({},{})", layer, mod_str)),
                 kind: KeycodeKind::Modifier,
                 layer_ref: Some(layer as u8),
                 ..Default::default()
@@ -110,8 +110,8 @@ pub fn get_advanced_keycode_label(keycode_bytes: u16) -> Option<KeycodeLabel> {
 
             let mod_str = mod_value_to_string(remainder);
 
-            Some(KeycodeLabel {
-                long: Some(format!("OSM({})", mod_str)),
+            Some(LayoutKey {
+                tap: Label::new(format!("OSM({})", mod_str)),
                 kind: KeycodeKind::Modifier,
                 ..Default::default()
             })
@@ -122,12 +122,12 @@ pub fn get_advanced_keycode_label(keycode_bytes: u16) -> Option<KeycodeLabel> {
             let layer = remainder >> 8;
 
             let keycode = (remainder & 0xFF) as u8;
-            let keycode_str = get_basic_keycode_label(keycode as u16)
-                .and_then(|k| k.long)
+            let keycode_str = get_basic_layout_key(keycode as u16)
+                .map(|k| k.tap.full)
                 .unwrap_or_else(|| format!("0x{:02X}", keycode));
 
-            Some(KeycodeLabel {
-                long: Some(format!("LT({},{})", layer, keycode_str)),
+            Some(LayoutKey {
+                tap: Label::new(format!("LT({},{})", layer, keycode_str)),
                 kind: KeycodeKind::Modifier,
                 layer_ref: Some(layer as u8),
                 ..Default::default()

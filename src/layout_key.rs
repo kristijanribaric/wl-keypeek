@@ -1,16 +1,72 @@
 //! Display-oriented key representation.
 //!
 //! `LayoutKey` is the unified abstraction for representing a key's display labels,
-//! independent of the source firmware (QMK, ZMK, etc.). It merges the functionality
-//! of the old `KeycodeLabel` struct with additional fields for hold-tap behaviors.
+//! independent of the source firmware (QMK, ZMK, etc.). It provides all the information
+//! needed to render a key's label in the overlay.
 //!
 //! # Transparency
 //! Transparent keys are represented as `None` when stored in collections like
 //! `Vec<Vec<Vec<Option<LayoutKey>>>>`. This makes layer fall-through logic simple:
 //! just check `key.is_some()`.
 
-use crate::keycode_labels::{get_keycode_label, KeycodeKind, KeycodeLabel};
+use crate::keycode_labels::get_layout_key;
 use qmk_via_api::keycodes::Keycode;
+
+/// Visual classification for key coloring.
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Default)]
+pub enum KeycodeKind {
+    #[default]
+    Basic,
+    Modifier,
+    Special,
+}
+
+/// A text label with optional short variant.
+///
+/// Used for both tap and hold labels in `LayoutKey`.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Label {
+    /// Full label text (e.g., "Enter", "Shift")
+    pub full: String,
+
+    /// Optional shorter version (e.g., "Ent", "Shft")
+    pub short: Option<String>,
+}
+
+impl Label {
+    /// Create a label with just the full text.
+    pub fn new(full: impl Into<String>) -> Self {
+        Label {
+            full: full.into(),
+            short: None,
+        }
+    }
+
+    /// Create a label with both full and short text.
+    pub fn with_short(full: impl Into<String>, short: impl Into<String>) -> Self {
+        Label {
+            full: full.into(),
+            short: Some(short.into()),
+        }
+    }
+
+    /// Check if the label is empty.
+    pub fn is_empty(&self) -> bool {
+        self.full.is_empty()
+    }
+}
+
+impl From<&str> for Label {
+    fn from(s: &str) -> Self {
+        Label::new(s)
+    }
+}
+
+impl From<String> for Label {
+    fn from(s: String) -> Self {
+        Label::new(s)
+    }
+}
 
 /// A key's display representation, containing all label variants and metadata.
 ///
@@ -19,13 +75,10 @@ use qmk_via_api::keycodes::Keycode;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LayoutKey {
     /// Primary key action label (e.g., "A", "Enter", "L1")
-    pub tap: String,
+    pub tap: Label,
 
     /// Hold action label for hold-tap keys (e.g., "Shift" for MT(LSFT, KC_A))
-    pub hold: Option<String>,
-
-    /// Short version of the tap label (e.g., "Ent" for "Enter")
-    pub short: Option<String>,
+    pub hold: Option<Label>,
 
     /// Symbol/icon for the key (using Phosphor icon font)
     pub symbol: Option<String>,
@@ -40,9 +93,8 @@ pub struct LayoutKey {
 impl Default for LayoutKey {
     fn default() -> Self {
         LayoutKey {
-            tap: String::new(),
+            tap: Label::default(),
             hold: None,
-            short: None,
             symbol: None,
             kind: KeycodeKind::Basic,
             layer_ref: None,
@@ -51,34 +103,6 @@ impl Default for LayoutKey {
 }
 
 impl LayoutKey {
-    /// Create a simple key with just a tap label.
-    pub fn simple(tap: impl Into<String>) -> Self {
-        LayoutKey {
-            tap: tap.into(),
-            ..Default::default()
-        }
-    }
-
-    /// Create a hold-tap key with both tap and hold labels.
-    pub fn hold_tap(tap: impl Into<String>, hold: impl Into<String>) -> Self {
-        LayoutKey {
-            tap: tap.into(),
-            hold: Some(hold.into()),
-            kind: KeycodeKind::Modifier,
-            ..Default::default()
-        }
-    }
-
-    /// Create a layer-switching key.
-    pub fn layer(tap: impl Into<String>, layer: u8) -> Self {
-        LayoutKey {
-            tap: tap.into(),
-            kind: KeycodeKind::Modifier,
-            layer_ref: Some(layer),
-            ..Default::default()
-        }
-    }
-
     /// Create a LayoutKey from a QMK keycode.
     ///
     /// Returns `None` for `KC_TRANSPARENT` (0x0001), which should be represented
@@ -89,37 +113,7 @@ impl LayoutKey {
             return None;
         }
 
-        let label = get_keycode_label(keycode);
-        Some(Self::from(label))
-    }
-
-    /// Get the best available label for display, considering available space.
-    ///
-    /// Priority: symbol > short > tap (truncated if needed)
-    pub fn display_label(&self, max_chars: usize) -> &str {
-        if let Some(symbol) = &self.symbol {
-            return symbol;
-        }
-        if let Some(short) = &self.short {
-            if short.len() <= max_chars {
-                return short;
-            }
-        }
-        &self.tap
-    }
-}
-
-impl From<KeycodeLabel> for LayoutKey {
-    fn from(label: KeycodeLabel) -> Self {
-        LayoutKey {
-            // Use long label as tap, fall back to empty string
-            tap: label.long.unwrap_or_default(),
-            hold: None, // KeycodeLabel doesn't have hold; advanced.rs handles this differently
-            short: label.short,
-            symbol: label.symbol,
-            kind: label.kind,
-            layer_ref: label.layer_ref,
-        }
+        get_layout_key(keycode)
     }
 }
 
@@ -132,7 +126,7 @@ mod tests {
         let key = LayoutKey::from_qmk_keycode(Keycode::KC_A as u16);
         assert!(key.is_some());
         let key = key.unwrap();
-        assert_eq!(key.tap, "A");
+        assert_eq!(key.tap.full, "A");
         assert_eq!(key.kind, KeycodeKind::Basic);
     }
 
@@ -148,29 +142,6 @@ mod tests {
         assert!(key.is_some());
         // KC_NO should produce an empty tap label
         let key = key.unwrap();
-        assert_eq!(key.tap, "");
-    }
-
-    #[test]
-    fn test_simple_constructor() {
-        let key = LayoutKey::simple("A");
-        assert_eq!(key.tap, "A");
-        assert!(key.hold.is_none());
-    }
-
-    #[test]
-    fn test_hold_tap_constructor() {
-        let key = LayoutKey::hold_tap("A", "Shift");
-        assert_eq!(key.tap, "A");
-        assert_eq!(key.hold, Some("Shift".to_string()));
-        assert_eq!(key.kind, KeycodeKind::Modifier);
-    }
-
-    #[test]
-    fn test_layer_constructor() {
-        let key = LayoutKey::layer("L1", 1);
-        assert_eq!(key.tap, "L1");
-        assert_eq!(key.layer_ref, Some(1));
-        assert_eq!(key.kind, KeycodeKind::Modifier);
+        assert_eq!(key.tap.full, "");
     }
 }

@@ -5,10 +5,10 @@ mod keycode_label;
 mod layer;
 
 #[allow(unused_imports)]
-pub use advanced::get_advanced_keycode_label;
+pub use advanced::get_advanced_layout_key;
 #[allow(unused_imports)]
-pub use basic::get_basic_keycode_label;
+pub use basic::get_basic_layout_key;
 #[allow(unused_imports)]
-pub use keycode_label::{get_keycode_label, KeycodeKind, KeycodeLabel};
+pub use keycode_label::get_layout_key;
 #[allow(unused_imports)]
-pub use layer::get_layer_keycode_label;
+pub use layer::get_layer_layout_key;

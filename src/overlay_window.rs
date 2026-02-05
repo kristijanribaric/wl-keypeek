@@ -1,6 +1,5 @@
 use crate::keyboard::Keyboard;
-use crate::keycode_labels::KeycodeKind;
-use crate::layout_key::LayoutKey;
+use crate::layout_key::{KeycodeKind, LayoutKey};
 use crate::settings::WindowPosition;
 
 use eframe::egui::{self, Align2, Window};
@@ -46,9 +45,9 @@ impl Overlay {
             let symbol_font = egui::FontId::proportional(0.33 * self.size);
             let symbol_galley = create_galley(symbol.clone(), symbol_font);
 
-            // Try to fit symbol + tap (long) label
+            // Try to fit symbol + tap (full) label
             if !key.tap.is_empty() {
-                let text_galley = create_galley(key.tap.clone(), font.clone());
+                let text_galley = create_galley(key.tap.full.clone(), font.clone());
                 let gap = 0.06 * self.size;
                 let total_width = symbol_galley.rect.width() + gap + text_galley.rect.width();
                 if total_width <= max_width {
@@ -60,7 +59,7 @@ impl Overlay {
             }
 
             // Try to fit symbol + short label
-            if let Some(short) = &key.short {
+            if let Some(short) = &key.tap.short {
                 let text_galley = create_galley(short.clone(), font.clone());
                 let gap = 0.06 * self.size;
                 let total_width = symbol_galley.rect.width() + gap + text_galley.rect.width();
@@ -79,8 +78,8 @@ impl Overlay {
             };
         }
 
-        // Try fitting tap (long) label
-        let full_galley = create_galley(key.tap.clone(), font.clone());
+        // Try fitting tap (full) label
+        let full_galley = create_galley(key.tap.full.clone(), font.clone());
         if fits_width(&full_galley, max_width) {
             return LabelGalleys {
                 symbol: None,
@@ -89,7 +88,7 @@ impl Overlay {
         }
 
         // Try fitting short label or truncated tap label
-        let mut truncated = if let Some(short) = &key.short {
+        let mut truncated = if let Some(short) = &key.tap.short {
             let short_galley = create_galley(short.clone(), font.clone());
             if fits_width(&short_galley, max_width) {
                 return LabelGalleys {
@@ -99,7 +98,7 @@ impl Overlay {
             }
             short.clone()
         } else {
-            key.tap.clone()
+            key.tap.full.clone()
         };
 
         while truncated.len() > 1 {
