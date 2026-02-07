@@ -3,6 +3,9 @@ use std::process;
 use std::thread;
 use tray_icon::{menu::Menu, menu::MenuEvent, menu::MenuItem, Icon, TrayIcon, TrayIconBuilder};
 
+#[cfg(target_os = "linux")]
+use gtk;
+
 fn create_icon() -> Icon {
     const ICON_BYTES: &[u8] = include_bytes!("../resources/icon.ico");
 
@@ -15,6 +18,9 @@ fn create_icon() -> Icon {
 }
 
 pub fn create_tray_icon() -> TrayIcon {
+    #[cfg(target_os = "linux")]
+    gtk::init().expect("Failed to initialize GTK. Is a display available?");
+
     let quit = MenuItem::new("Quit", true, None);
     let menu = Menu::new();
     menu.append(&quit).expect("Failed to append menu item.");
