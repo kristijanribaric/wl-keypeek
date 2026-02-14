@@ -41,6 +41,26 @@ impl ZmkCache {
     }
 }
 
+/// Process ZMK Studio data into a cache file and return the layout names.
+/// This does NOT open an HID connection — it only saves the cache so that
+/// a subsequent `connect_cached()` can pick it up.
+pub fn save_and_get_layout_names(
+    vid: u16,
+    pid: u16,
+    studio_data: &StudioData,
+) -> Result<Vec<String>, Box<dyn Error>> {
+    let (definition, layout_keys, layer_count) = build_from_studio_data(vid, pid, studio_data)?;
+
+    let cache = ZmkCache {
+        definition: definition.clone(),
+        layout_keys,
+        layer_count,
+    };
+    cache.save(vid, pid)?;
+
+    Ok(definition.get_layout_names())
+}
+
 pub struct ZmkProtocol {
     api: KeyboardApi,
     definition: KeyboardDefinition,
@@ -55,51 +75,37 @@ impl ZmkProtocol {
         let cache = ZmkCache::load(vid, pid)
             .ok_or_else(|| format!("No cached data for {:04x}:{:04x}", vid, pid))?;
 
-        let api = KeyboardApi::new(vid, pid, 0xff60)
-            .map_err(|e| format!("Failed to connect HID ({vid:04x}:{pid:04x}): {e}"))?;
-
-        Ok(Self {
-            api,
-            definition: cache.definition,
-            layout_keys: cache.layout_keys,
-            layer_count: cache.layer_count,
-        })
-    }
-
-    /// Connect via ZMK Studio protocol over serial to fetch layout/keymap,
-    /// then cache and open HID for keypress monitoring.
-    ///
-    /// The device must already be unlocked. Use `zmk_studio::fetch_studio_data`
-    /// which returns `DEVICE_LOCKED` if locked — the caller should handle the
-    /// unlock UI flow before calling this.
-    pub fn connect_studio(
-        vid: u16,
-        pid: u16,
-        studio_data: StudioData,
-    ) -> Result<Self, Box<dyn Error>> {
-        let (definition, layout_keys, layer_count) =
-            build_from_studio_data(vid, pid, &studio_data)?;
-
-        // Cache the data
-        let cache = ZmkCache {
-            definition: definition.clone(),
-            layout_keys: layout_keys.clone(),
-            layer_count,
-        };
-        if let Err(e) = cache.save(vid, pid) {
-            eprintln!("Warning: failed to save ZMK cache: {e}");
+        // Retry HID connection with increasing delays. After ZMK Studio serial
+        // interactions the USB device needs time to settle on Windows.
+        let mut last_err = String::new();
+        for attempt in 0..5 {
+            if attempt > 0 {
+                let delay = std::time::Duration::from_millis(300 * attempt as u64);
+                eprintln!(
+                    "HID connect attempt {} failed, retrying in {:?}...",
+                    attempt, delay
+                );
+                std::thread::sleep(delay);
+            }
+            match KeyboardApi::new(vid, pid, 0xff60) {
+                Ok(api) => {
+                    return Ok(Self {
+                        api,
+                        definition: cache.definition,
+                        layout_keys: cache.layout_keys,
+                        layer_count: cache.layer_count,
+                    });
+                }
+                Err(e) => {
+                    last_err = format!("{e}");
+                }
+            }
         }
 
-        // Connect HID for keypress monitoring
-        let api = KeyboardApi::new(vid, pid, 0xff60)
-            .map_err(|e| format!("Failed to connect HID ({vid:04x}:{pid:04x}): {e}"))?;
-
-        Ok(Self {
-            api,
-            definition,
-            layout_keys,
-            layer_count,
-        })
+        Err(
+            format!("Failed to connect HID ({vid:04x}:{pid:04x}) after 5 attempts: {last_err}")
+                .into(),
+        )
     }
 }
 
@@ -136,14 +142,7 @@ fn build_from_studio_data(
     vid: u16,
     pid: u16,
     data: &StudioData,
-) -> Result<
-    (
-        KeyboardDefinition,
-        Vec<Vec<Vec<Option<LayoutKey>>>>,
-        usize,
-    ),
-    Box<dyn Error>,
-> {
+) -> Result<(KeyboardDefinition, Vec<Vec<Vec<Option<LayoutKey>>>>, usize), Box<dyn Error>> {
     let active_idx = data.physical_layouts.active_layout_index as usize;
     let proto_layouts = &data.physical_layouts.layouts;
 

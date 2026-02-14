@@ -137,20 +137,12 @@ pub fn connect_protocol(
                 Ok(protocol) => Ok(Box::new(protocol)),
                 Err(_) => {
                     // No cache — caller needs to use connect_zmk_studio() instead
-                    Err("No cached ZMK data. Use the settings window to connect via ZMK Studio.".into())
+                    Err(
+                        "No cached ZMK data. Use the settings window to connect via ZMK Studio."
+                            .into(),
+                    )
                 }
             }
         }
     }
-}
-
-/// Connect to a ZMK device via Studio protocol with pre-fetched data.
-/// Called from the settings window after the unlock flow succeeds.
-pub fn connect_zmk_studio(
-    vid: u16,
-    pid: u16,
-    studio_data: zmk_studio::StudioData,
-) -> Result<Box<dyn KeyboardProtocol>, Box<dyn Error>> {
-    let protocol = ZmkProtocol::connect_studio(vid, pid, studio_data)?;
-    Ok(Box::new(protocol))
 }

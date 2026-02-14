@@ -1,5 +1,6 @@
+use crate::protocols::zmk;
 use crate::protocols::zmk_studio;
-use crate::protocols::{connect_protocol, connect_zmk_studio, format_vid_pid, parse_vid_pid};
+use crate::protocols::{connect_protocol, format_vid_pid, parse_vid_pid};
 use crate::settings::ProtocolType;
 use crate::settings::Settings;
 use crate::settings::WindowPosition;
@@ -30,8 +31,6 @@ pub struct SettingsApp {
     connected: bool,
     protocol_type: ProtocolType,
     json_path: String,
-    /// Tracks whether we're showing the unlock prompt
-    zmk_unlock_pending: bool,
     /// Serial port name for ZMK Studio connection
     zmk_serial_port: Option<String>,
 }
@@ -70,7 +69,6 @@ impl SettingsApp {
             available_devices: Vec::new(),
             selected_device_index: None,
             connected: false,
-            zmk_unlock_pending: false,
             zmk_serial_port,
         };
         app.refresh_devices();
@@ -136,7 +134,6 @@ impl SettingsApp {
             self.selected_device_index = Some(index);
             self.connected = false;
             self.layout_names.clear();
-            self.zmk_unlock_pending = false;
 
             let vid_pid = format_vid_pid(device.vid, device.pid);
 
@@ -198,7 +195,7 @@ impl SettingsApp {
             let serial_port = self.zmk_serial_port.clone().unwrap();
             match zmk_studio::fetch_studio_data(&serial_port) {
                 Ok(studio_data) => {
-                    // Unlocked and data fetched — build protocol
+                    // Unlocked and data fetched — cache it (no HID opened yet)
                     let (vid, pid) = match parse_vid_pid(self.json_path.trim()) {
                         Ok(vp) => vp,
                         Err(e) => {
@@ -206,24 +203,21 @@ impl SettingsApp {
                             return;
                         }
                     };
-                    match connect_zmk_studio(vid, pid, studio_data) {
-                        Ok(protocol) => {
+                    match zmk::save_and_get_layout_names(vid, pid, &studio_data) {
+                        Ok(names) => {
                             self.current.protocol_type = self.protocol_type;
                             self.current.protocol_config = protocol_config;
-                            self.layout_names = protocol.get_layout_definition().get_layout_names();
+                            self.layout_names = names;
                             self.connected = true;
                             self.error = None;
-                            self.zmk_unlock_pending = false;
                         }
                         Err(e) => {
-                            self.error = Some(format!("Failed to connect: {e}"));
+                            self.error = Some(format!("Failed to process ZMK data: {e}"));
                         }
                     }
                 }
                 Err(e) if e.to_string() == "DEVICE_LOCKED" => {
-                    // Device is locked — show unlock prompt
-                    self.zmk_unlock_pending = true;
-                    self.error = None;
+                    self.error = Some("Device is locked. Please press the Studio unlock key combination on your keyboard, then click Connect again.".to_string());
                 }
                 Err(e) => {
                     self.error = Some(format!("ZMK Studio error: {e}"));
@@ -249,49 +243,6 @@ impl SettingsApp {
         if let Some(first) = self.layout_names.first() {
             if !self.layout_names.contains(&self.current.layout_name) {
                 self.current.layout_name = first.clone();
-            }
-        }
-    }
-
-    fn try_zmk_unlock_and_connect(&mut self) {
-        let serial_port = match &self.zmk_serial_port {
-            Some(p) => p.clone(),
-            None => return,
-        };
-
-        // Check if unlocked now
-        match zmk_studio::fetch_studio_data(&serial_port) {
-            Ok(studio_data) => {
-                let (vid, pid) = match parse_vid_pid(self.json_path.trim()) {
-                    Ok(vp) => vp,
-                    Err(e) => {
-                        self.error = Some(format!("Invalid VID:PID: {e}"));
-                        self.zmk_unlock_pending = false;
-                        return;
-                    }
-                };
-                let protocol_config = format!("{}|{}", self.json_path.trim(), serial_port);
-                match connect_zmk_studio(vid, pid, studio_data) {
-                    Ok(protocol) => {
-                        self.current.protocol_type = self.protocol_type;
-                        self.current.protocol_config = protocol_config;
-                        self.layout_names = protocol.get_layout_definition().get_layout_names();
-                        self.connected = true;
-                        self.zmk_unlock_pending = false;
-                        self.error = None;
-                    }
-                    Err(e) => {
-                        self.error = Some(format!("Failed to connect: {e}"));
-                        self.zmk_unlock_pending = false;
-                    }
-                }
-            }
-            Err(e) if e.to_string() == "DEVICE_LOCKED" => {
-                // Still locked — keep showing prompt
-            }
-            Err(e) => {
-                self.error = Some(format!("ZMK Studio error: {e}"));
-                self.zmk_unlock_pending = false;
             }
         }
     }
@@ -556,29 +507,6 @@ impl eframe::App for SettingsApp {
                     });
                 });
             });
-
-        // ZMK unlock popup
-        if self.zmk_unlock_pending {
-            egui::Window::new("Unlock ZMK Device")
-                .collapsible(false)
-                .resizable(false)
-                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-                .show(ctx, |ui| {
-                    ui.label("Your ZMK keyboard is locked.");
-                    ui.add_space(5.0);
-                    ui.label("Press the Studio unlock key combination on your keyboard.");
-                    ui.add_space(10.0);
-                    ui.spinner();
-                    ui.add_space(10.0);
-                    if ui.button("Cancel").clicked() {
-                        self.zmk_unlock_pending = false;
-                    }
-                });
-
-            // Poll for unlock every frame (repaint is requested automatically)
-            self.try_zmk_unlock_and_connect();
-            ctx.request_repaint_after(std::time::Duration::from_millis(500));
-        }
 
         if let Some(error_message) = self.error.clone() {
             egui::Window::new("Error")

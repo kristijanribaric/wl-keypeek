@@ -375,10 +375,7 @@ impl BehaviorMap {
         let mut entries = HashMap::new();
         for (id, detail) in details {
             let (p1_type, p2_type) = if let Some(set) = detail.metadata.first() {
-                (
-                    classify_param(&set.param1),
-                    classify_param(&set.param2),
-                )
+                (classify_param(&set.param1), classify_param(&set.param2))
             } else {
                 (ParamType::None, ParamType::None)
             };
@@ -645,6 +642,8 @@ pub fn fetch_studio_data(port_name: &str) -> Result<StudioData, Box<dyn Error>> 
     // Check lock state (unsecured RPC)
     let lock_state = client.get_lock_state()?;
     if lock_state == core::LockState::Locked {
+        // Explicitly drop the serial connection before returning
+        drop(client);
         return Err("DEVICE_LOCKED".into());
     }
 
@@ -653,6 +652,11 @@ pub fn fetch_studio_data(port_name: &str) -> Result<StudioData, Box<dyn Error>> 
     let keymap = client.get_keymap()?;
     let behavior_details = client.fetch_all_behavior_details()?;
     let behavior_map = BehaviorMap::from_details(&behavior_details);
+
+    // Explicitly drop the serial connection and give the USB device time to
+    // settle before the caller opens any other handle (e.g. HID).
+    drop(client);
+    std::thread::sleep(Duration::from_millis(100));
 
     Ok(StudioData {
         physical_layouts,
@@ -663,10 +667,7 @@ pub fn fetch_studio_data(port_name: &str) -> Result<StudioData, Box<dyn Error>> 
 
 /// Poll lock state until unlocked (with timeout).
 #[allow(dead_code)]
-pub fn wait_for_unlock(
-    port_name: &str,
-    timeout: Duration,
-) -> Result<(), Box<dyn Error>> {
+pub fn wait_for_unlock(port_name: &str, timeout: Duration) -> Result<(), Box<dyn Error>> {
     let mut client = StudioRpcClient::open(port_name)?;
     let start = std::time::Instant::now();
 
