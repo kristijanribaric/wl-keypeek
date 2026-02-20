@@ -1,4 +1,4 @@
-use super::zmk_studio::StudioData;
+use super::zmk_rpc::ZmkData;
 use super::{Key, KeyboardDefinition, KeyboardLayout, KeyboardProtocol};
 use crate::layout_key::LayoutKey;
 use qmk_via_api::api::KeyboardApi;
@@ -36,9 +36,9 @@ impl ZmkCache {
 pub fn save_and_get_layout_names(
     vid: u16,
     pid: u16,
-    studio_data: &StudioData,
+    zmk_data: &ZmkData,
 ) -> Result<Vec<String>, Box<dyn Error>> {
-    let (definition, layout_keys, layer_count) = build_from_studio_data(vid, pid, studio_data)?;
+    let (definition, layout_keys, layer_count) = build_from_zmk_data(vid, pid, zmk_data)?;
 
     let cache = ZmkCache {
         definition: definition.clone(),
@@ -114,10 +114,10 @@ impl KeyboardProtocol for ZmkProtocol {
     }
 }
 
-fn build_from_studio_data(
+fn build_from_zmk_data(
     vid: u16,
     pid: u16,
-    data: &StudioData,
+    data: &ZmkData,
 ) -> Result<(KeyboardDefinition, LayerKeys3d, usize), Box<dyn Error>> {
     const ACTIVE_LAYOUT_NAME: &str = "active physical layout";
 

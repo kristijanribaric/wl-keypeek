@@ -82,7 +82,7 @@ pub fn behavior_to_layout_key(behavior: &Behavior) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Behavior::StudioUnlock => Some(LayoutKey {
-            tap: Label::with_short("Studio Unlock", "Unlock"),
+            tap: Label::with_short("ZMK Studio Unlock", "Unlock"),
             kind: KeycodeKind::Special,
             ..Default::default()
         }),

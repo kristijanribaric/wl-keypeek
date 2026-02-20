@@ -60,7 +60,17 @@ The only input required for QMK Layout Helper is the keyboard information json f
 
 <img src=".github/assets/settings_window.png" alt="Settings window screenshot" width="60%">
 
-When "Remember settings" is checked, the selected options will be saved to a settings.ini file. For now, if you want to change the settings, either edit the settings.ini file manually or delete it to trigger the settings window on the next launch.
+For ZMK keyboards, select a ZMK HID device, then choose a ZMK transport:
+- `Serial` for wired ZMK access (`serial:<port>`)
+- `Bluetooth` for BLE ZMK access (`ble:<device_id>`)
+
+Saved ZMK settings use strict tagged transport config:
+- `vid:pid|serial:<port>`
+- `vid:pid|ble:<device_id>`
+
+Legacy untagged ZMK settings are intentionally unsupported.
+
+When "Remember settings" is checked, the selected options are saved to `settings.ini`.
 
 # License & Attribution
 

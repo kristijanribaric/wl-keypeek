@@ -10,7 +10,7 @@ edition = "2021"
 
 [dependencies]
 rust-ini = "0.21.3"
-tray-icon = "0.21.2"
+tray-icon = "0.21.3"
 eframe = "0.33.3"
 egui_extras = { version = "0.33.3", features = ["all_loaders"] }
 qmk-via-api = { version = "0.5.0", default-features = false }
@@ -22,7 +22,7 @@ image = "0.25.9"
 lzma-rs = "0.3"
 regex = "1.12.3"
 serialport = "4"
-zmk-studio-api = { path = "../zmk-studio-api", features = ["serial"] }
+zmk-studio-api = { path = "../zmk-studio-api", features = ["serial", "ble"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"

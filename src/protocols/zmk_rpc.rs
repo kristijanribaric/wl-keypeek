@@ -1,8 +1,10 @@
 use crate::layout_key::LayoutKey;
 use crate::zmk_keycode_labels::behavior_to_layout_key;
 use std::error::Error;
+use std::io::{Read, Write};
 use std::time::Duration;
 use zmk_studio_api::proto::zmk::{core, keymap};
+use zmk_studio_api::transport::ble::{BleDeviceInfo, BleTransport};
 use zmk_studio_api::{Behavior, StudioClient};
 
 pub struct ZmkSerialDevice {
@@ -10,6 +12,18 @@ pub struct ZmkSerialDevice {
     pub vid: u16,
     pub pid: u16,
     pub product: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ZmkBleDevice {
+    pub device_id: String,
+    pub display_name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ZmkTransport {
+    SerialPort(String),
+    BleDevice(String),
 }
 
 pub fn scan_serial_ports() -> Vec<ZmkSerialDevice> {
@@ -34,15 +48,48 @@ pub fn scan_serial_ports() -> Vec<ZmkSerialDevice> {
         .collect()
 }
 
-pub struct StudioData {
+pub fn scan_ble_devices() -> Result<Vec<ZmkBleDevice>, Box<dyn Error>> {
+    let devices: Vec<BleDeviceInfo> = StudioClient::<BleTransport>::list_ble_devices()?;
+    Ok(devices
+        .into_iter()
+        .map(|device| {
+            let display_name = device.display_name();
+            ZmkBleDevice {
+                device_id: device.device_id,
+                display_name,
+            }
+        })
+        .collect())
+}
+
+pub struct ZmkData {
     pub physical_layouts: keymap::PhysicalLayouts,
     pub layout_keys: Vec<Vec<Option<LayoutKey>>>,
     pub layer_count: usize,
 }
 
-pub fn fetch_studio_data(port_name: &str) -> Result<StudioData, Box<dyn Error>> {
-    let mut client = StudioClient::open_serial(port_name)
-        .map_err(|e| format!("Failed to open serial port '{}': {}", port_name, e))?;
+pub fn fetch_zmk_data(transport: &ZmkTransport) -> Result<ZmkData, Box<dyn Error>> {
+    match transport {
+        ZmkTransport::SerialPort(port_name) => {
+            let client = StudioClient::open_serial(port_name)
+                .map_err(|e| format!("Failed to open serial port '{}': {}", port_name, e))?;
+            fetch_zmk_data_from_client(client)
+        }
+        ZmkTransport::BleDevice(device_id) => {
+            let client = StudioClient::open_ble(device_id).map_err(|e| {
+                format!(
+                    "Failed to open BLE device '{}'. Make sure your adapter is enabled and the board is advertising: {}",
+                    device_id, e
+                )
+            })?;
+            fetch_zmk_data_from_client(client)
+        }
+    }
+}
+
+fn fetch_zmk_data_from_client<T: Read + Write>(
+    mut client: StudioClient<T>,
+) -> Result<ZmkData, Box<dyn Error>> {
 
     let lock_state = client.get_lock_state()?;
     if lock_state == core::LockState::ZmkStudioCoreLockStateLocked {
@@ -60,12 +107,12 @@ pub fn fetch_studio_data(port_name: &str) -> Result<StudioData, Box<dyn Error>> 
         .map(|layer| layer.iter().map(behavior_to_layout_key).collect())
         .collect();
 
-    // Drop the serial connection and give USB time to settle before
+    // Drop the ZMK RPC connection and give transport time to settle before
     // the caller opens any other handle (e.g. HID).
     drop(client);
     std::thread::sleep(Duration::from_millis(100));
 
-    Ok(StudioData {
+    Ok(ZmkData {
         physical_layouts,
         layout_keys,
         layer_count,

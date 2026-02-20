@@ -1,9 +1,10 @@
+use crate::connection::{build_connected_state, ConnectedState, ConnectionTask};
 use crate::device_discovery::{discover_devices, DeviceKind, DiscoveredDevice};
 use crate::keyboard::Keyboard;
 use crate::layout_key::{KeycodeKind, LayoutKey};
-use crate::protocols::zmk;
-use crate::protocols::zmk_studio;
-use crate::protocols::{connect_protocol, format_vid_pid, parse_vid_pid, KeyboardDefinition};
+use crate::protocols::{
+    format_vid_pid, format_zmk_config, parse_zmk_config, KeyboardDefinition, ZmkTransportConfig,
+};
 use crate::settings::{ProtocolType, Settings, ThemeColor, WindowPosition};
 
 use eframe::egui::{self, Align2, Window};
@@ -22,6 +23,12 @@ enum AppConnectionState {
     Connected { keyboard: Keyboard },
 }
 
+#[derive(Clone)]
+enum ZmkTransportDraft {
+    Serial { port_name: Option<String> },
+    Ble { device_id: Option<String> },
+}
+
 pub struct OverlayApp {
     connection_state: AppConnectionState,
     settings_visible: bool,
@@ -37,7 +44,8 @@ pub struct OverlayApp {
     protocol_type: ProtocolType,
     json_path: String,
     file_dialog: FileDialog,
-    zmk_serial_port: Option<String>,
+    zmk_transport: ZmkTransportDraft,
+    pending_connect: Option<ConnectionTask>,
 }
 
 impl OverlayApp {
@@ -47,22 +55,28 @@ impl OverlayApp {
             .as_ref()
             .is_some_and(|settings| settings.save_settings);
         let protocol_type = base.protocol_type;
-        let json_path = match base.protocol_type {
+        let mut json_path = match base.protocol_type {
             ProtocolType::Via => base.protocol_config.clone(),
             ProtocolType::Vial => base.protocol_config.clone(),
-            ProtocolType::Zmk => base
-                .protocol_config
-                .split('|')
-                .next()
-                .unwrap_or("")
-                .to_string(),
+            ProtocolType::Zmk => String::new(),
         };
-        let zmk_serial_port = if base.protocol_type == ProtocolType::Zmk {
-            base.protocol_config
-                .split_once('|')
-                .map(|(_, p)| p.to_string())
+        let zmk_transport = if base.protocol_type == ProtocolType::Zmk {
+            match parse_zmk_config(&base.protocol_config) {
+                Ok((vid, pid, transport)) => {
+                    json_path = format_vid_pid(vid, pid);
+                    match transport {
+                        ZmkTransportConfig::Serial(port) => ZmkTransportDraft::Serial {
+                            port_name: Some(port),
+                        },
+                        ZmkTransportConfig::Ble(device_id) => ZmkTransportDraft::Ble {
+                            device_id: Some(device_id),
+                        },
+                    }
+                }
+                Err(_) => ZmkTransportDraft::Serial { port_name: None },
+            }
         } else {
-            None
+            ZmkTransportDraft::Serial { port_name: None }
         };
 
         let mut app = Self {
@@ -80,7 +94,8 @@ impl OverlayApp {
             protocol_type,
             json_path,
             file_dialog: FileDialog::new(),
-            zmk_serial_port,
+            zmk_transport,
+            pending_connect: None,
         };
 
         app.available_devices = discover_devices();
@@ -103,19 +118,27 @@ impl OverlayApp {
 
             let vid_pid = format_vid_pid(device.vid, device.pid);
             match device.kind {
-                DeviceKind::Studio => {
+                DeviceKind::Zmk => {
                     self.protocol_type = ProtocolType::Zmk;
                     self.json_path = vid_pid;
-                    self.zmk_serial_port = device.serial_port.clone();
+                    self.zmk_transport = if let Some(device_id) = &device.ble_device_id {
+                        ZmkTransportDraft::Ble {
+                            device_id: Some(device_id.clone()),
+                        }
+                    } else if let Some(port_name) = &device.serial_port {
+                        ZmkTransportDraft::Serial {
+                            port_name: Some(port_name.clone()),
+                        }
+                    } else {
+                        ZmkTransportDraft::Ble { device_id: None }
+                    };
                 }
                 DeviceKind::Vial => {
                     self.protocol_type = ProtocolType::Vial;
-                    self.zmk_serial_port = None;
                     self.json_path = vid_pid;
                 }
                 DeviceKind::Qmk => {
                     self.protocol_type = ProtocolType::Via;
-                    self.zmk_serial_port = None;
                     self.json_path = String::new();
                 }
             }
@@ -135,70 +158,38 @@ impl OverlayApp {
                 }
             }
             ProtocolType::Zmk => {
-                let serial_port = self
-                    .zmk_serial_port
-                    .as_ref()
-                    .ok_or_else(|| "No serial port detected for this ZMK device".to_string())?;
-                Ok(format!("{}|{}", self.json_path.trim(), serial_port))
+                let (vid, pid) = crate::protocols::parse_vid_pid(self.json_path.trim())
+                    .map_err(|e| format!("Invalid ZMK VID:PID: {e}"))?;
+
+                let transport = match &self.zmk_transport {
+                    ZmkTransportDraft::Serial { port_name } => {
+                        let port = port_name
+                            .as_ref()
+                            .ok_or_else(|| "No serial port selected for ZMK".to_string())?;
+                        ZmkTransportConfig::Serial(port.clone())
+                    }
+                    ZmkTransportDraft::Ble { device_id } => {
+                        let id = device_id
+                            .as_ref()
+                            .ok_or_else(|| "No BLE device selected for ZMK".to_string())?;
+                        ZmkTransportConfig::Ble(id.clone())
+                    }
+                };
+
+                Ok(format_zmk_config(vid, pid, &transport))
             }
         }
     }
 
-    fn connect_with_settings(
-        &mut self,
-        mut settings: Settings,
-        opened_from_ui: bool,
-    ) -> Result<(), String> {
-        let protocol_config = settings.protocol_config.clone();
-
-        let protocol = if settings.protocol_type == ProtocolType::Zmk {
-            let (vid, pid) = parse_vid_pid(
-                protocol_config
-                    .split('|')
-                    .next()
-                    .ok_or_else(|| "Invalid ZMK config".to_string())?,
-            )
-            .map_err(|e| format!("Invalid VID:PID: {e}"))?;
-
-            let serial_port = protocol_config
-                .split_once('|')
-                .map(|(_, p)| p.to_string())
-                .ok_or_else(|| "Missing serial port in ZMK config".to_string())?;
-
-            let studio_data = zmk_studio::fetch_studio_data(&serial_port).map_err(|e| {
-                if e.to_string() == "DEVICE_LOCKED" {
-                    "Device is locked. Please press the Studio unlock key combination on your keyboard, then click Connect again.".to_string()
-                } else {
-                    format!("ZMK Studio error: {e}")
-                }
-            })?;
-
-            zmk::save_and_get_layout_names(vid, pid, &studio_data)
-                .map_err(|e| format!("Failed to process ZMK data: {e}"))?;
-
-            connect_protocol(settings.protocol_type, &settings.protocol_config)
-                .map_err(|e| format!("Failed to connect to device: {e}"))?
-        } else {
-            connect_protocol(settings.protocol_type, &settings.protocol_config)
-                .map_err(|e| format!("Failed to connect to device: {e}"))?
-        };
-
-        self.layout_names = protocol.get_layout_definition().get_layout_names();
-        if let Some(first) = self.layout_names.first() {
-            if !self.layout_names.contains(&settings.layout_name) {
-                settings.layout_name = first.clone();
-            }
-        };
-        let definition = protocol.get_layout_definition().clone();
-
-        let keyboard = Keyboard::new(protocol, settings.layout_name.clone(), settings.timeout)
-            .map_err(|e| format!("Failed to create keyboard: {e}"))?;
-
-        self.active_settings = settings.clone();
-        self.draft_settings = settings;
-        self.connected_definition = Some(definition);
+    fn apply_connected_state(&mut self, connected: ConnectedState, opened_from_ui: bool) {
+        self.layout_names = connected.layout_names;
+        self.active_settings = connected.settings.clone();
+        self.draft_settings = connected.settings;
+        self.connected_definition = Some(connected.definition);
         self.protocol_type = self.active_settings.protocol_type;
-        self.connection_state = AppConnectionState::Connected { keyboard };
+        self.connection_state = AppConnectionState::Connected {
+            keyboard: connected.keyboard,
+        };
         self.ever_connected = true;
         self.settings_error = None;
         self.settings_warning = None;
@@ -208,6 +199,15 @@ impl OverlayApp {
         }
 
         self.persist_settings();
+    }
+
+    fn connect_with_settings(
+        &mut self,
+        settings: Settings,
+        opened_from_ui: bool,
+    ) -> Result<(), String> {
+        let connected = build_connected_state(settings)?;
+        self.apply_connected_state(connected, opened_from_ui);
         Ok(())
     }
 
@@ -236,10 +236,14 @@ impl OverlayApp {
             return;
         }
 
-        self.connect_with_current_draft();
+        self.begin_connect_with_current_draft();
     }
 
-    fn connect_with_current_draft(&mut self) {
+    fn begin_connect_with_current_draft(&mut self) {
+        if self.pending_connect.is_some() {
+            return;
+        }
+
         let protocol_config = match self.build_protocol_config() {
             Ok(cfg) => cfg,
             Err(e) => {
@@ -252,8 +256,25 @@ impl OverlayApp {
         settings.protocol_type = self.protocol_type;
         settings.protocol_config = protocol_config;
 
-        if let Err(e) = self.connect_with_settings(settings, true) {
-            self.settings_error = Some(e);
+        self.pending_connect = Some(ConnectionTask::start(settings));
+        self.settings_error = None;
+    }
+
+    fn poll_connect_result(&mut self) {
+        let Some(task) = self.pending_connect.as_ref() else {
+            return;
+        };
+
+        match task.try_finish() {
+            Some(Ok(connected)) => {
+                self.pending_connect = None;
+                self.apply_connected_state(connected, true);
+            }
+            Some(Err(e)) => {
+                self.pending_connect = None;
+                self.settings_error = Some(e);
+            }
+            None => {}
         }
     }
 
@@ -447,13 +468,20 @@ impl OverlayApp {
                                         egui::vec2(RIGHT_COLUMN_WIDTH, 20.0),
                                         egui::Layout::left_to_right(egui::Align::Center),
                                         |ui| {
+                                            let connect_in_progress = self.pending_connect.is_some();
                                             let can_connect = !connection_locked
+                                                && !connect_in_progress
                                                 && self.selected_device_index.is_some();
+                                            let button_label = if connect_in_progress {
+                                                "Connecting..."
+                                            } else {
+                                                "Connect"
+                                            };
                                             ui.add_enabled_ui(can_connect, |ui| {
                                                 if ui
                                                     .add_sized(
                                                         [RIGHT_COLUMN_WIDTH, 20.0],
-                                                        egui::Button::new("Connect"),
+                                                        egui::Button::new(button_label),
                                                     )
                                                     .clicked()
                                                 {
@@ -906,6 +934,7 @@ impl eframe::App for OverlayApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.poll_connect_result();
         self.apply_live_visual_settings();
         self.apply_live_layout_settings();
         self.file_dialog.update(ctx);
