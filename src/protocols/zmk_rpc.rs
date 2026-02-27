@@ -4,7 +4,12 @@ use std::error::Error;
 use std::io::{Read, Write};
 use std::time::Duration;
 use zmk_studio_api::proto::zmk::{core, keymap};
-use zmk_studio_api::transport::ble::{BleDeviceInfo, BleTransport};
+#[cfg(not(target_os = "windows"))]
+use zmk_studio_api::transport::ble::BleDeviceInfo;
+#[cfg(not(target_os = "windows"))]
+use zmk_studio_api::transport::ble::BleTransport;
+#[cfg(target_os = "windows")]
+use zmk_studio_api::transport::winrt::WinRtGattTransport;
 use zmk_studio_api::{Behavior, StudioClient};
 
 pub struct ZmkSerialDevice {
@@ -48,8 +53,10 @@ pub fn scan_serial_ports() -> Vec<ZmkSerialDevice> {
         .collect()
 }
 
+#[cfg(not(target_os = "windows"))]
 pub fn scan_ble_devices() -> Result<Vec<ZmkBleDevice>, Box<dyn Error>> {
-    let devices: Vec<BleDeviceInfo> = StudioClient::<BleTransport>::list_ble_devices()?;
+    let devices: Vec<BleDeviceInfo> =
+        StudioClient::<zmk_studio_api::transport::ble::BleTransport>::list_ble_devices()?;
     Ok(devices
         .into_iter()
         .map(|device| {
@@ -60,6 +67,24 @@ pub fn scan_ble_devices() -> Result<Vec<ZmkBleDevice>, Box<dyn Error>> {
             }
         })
         .collect())
+}
+
+/// Probe a list of Bluetooth addresses and return those that are ZMK Studio
+/// keyboards. Uses native WinRT GATT APIs so it works for devices that are
+/// already paired and connected as HID peripherals (no advertisement scan).
+#[cfg(target_os = "windows")]
+pub fn probe_ble_devices(bt_addresses: &[[u8; 6]]) -> Vec<ZmkBleDevice> {
+    StudioClient::<WinRtGattTransport>::probe_ble_devices(bt_addresses)
+        .into_iter()
+        .map(|info| {
+            let display_name = info.display_name();
+            let device_id = info.device_id;
+            ZmkBleDevice {
+                device_id,
+                display_name,
+            }
+        })
+        .collect()
 }
 
 pub struct ZmkData {
@@ -75,22 +100,32 @@ pub fn fetch_zmk_data(transport: &ZmkTransport) -> Result<ZmkData, Box<dyn Error
                 .map_err(|e| format!("Failed to open serial port '{}': {}", port_name, e))?;
             fetch_zmk_data_from_client(client)
         }
-        ZmkTransport::BleDevice(device_id) => {
-            let client = StudioClient::open_ble(device_id).map_err(|e| {
-                format!(
-                    "Failed to open BLE device '{}'. Make sure your adapter is enabled and the board is advertising: {}",
-                    device_id, e
-                )
-            })?;
-            fetch_zmk_data_from_client(client)
-        }
+        ZmkTransport::BleDevice(device_id) => open_zmk_ble_and_fetch(device_id),
     }
+}
+
+fn open_zmk_ble_and_fetch(device_id: &str) -> Result<ZmkData, Box<dyn Error>> {
+    // On Windows use the native WinRT transport which works for already-paired
+    // BLE HID devices that are not currently advertising.
+    #[cfg(target_os = "windows")]
+    let client = StudioClient::<WinRtGattTransport>::open_ble_winrt(device_id)
+        .map_err(|e| format!("Failed to connect to BLE device '{device_id}' via WinRT: {e}"))?;
+
+    // On Linux / macOS use the btleplug-based transport (advertisement scan).
+    #[cfg(not(target_os = "windows"))]
+    let client = StudioClient::open_ble(device_id).map_err(|e| {
+        format!(
+            "Failed to open BLE device '{device_id}'. Make sure your adapter is enabled \
+             and the board is advertising: {e}"
+        )
+    })?;
+
+    fetch_zmk_data_from_client(client)
 }
 
 fn fetch_zmk_data_from_client<T: Read + Write>(
     mut client: StudioClient<T>,
 ) -> Result<ZmkData, Box<dyn Error>> {
-
     let lock_state = client.get_lock_state()?;
     if lock_state == core::LockState::ZmkStudioCoreLockStateLocked {
         drop(client);

@@ -3900,6 +3900,7 @@ dependencies = [
  "egui-phosphor",
  "egui_extras",
  "gtk",
+ "hidapi",
  "image",
  "lzma-rs",
  "qmk-via-api",
@@ -3916,8 +3917,6 @@ dependencies = [
 [[package]]
 name = "qmk-via-api"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "844e5e879f6657d7c7721c8263717120157f1d4549f8f78c065d1417cee934ed"
 dependencies = [
  "hidapi",
  "itertools",
@@ -6491,8 +6490,6 @@ checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
 [[package]]
 name = "zmk-studio-api"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24e0f779a8f50dcd71529eb634771fbdcd806874b67a03215548f07d10a714ef"
 dependencies = [
  "btleplug",
  "futures",
@@ -6505,6 +6502,7 @@ dependencies = [
  "strum_macros",
  "tokio",
  "uuid",
+ "windows 0.61.3",
 ]
 
 [[package]]

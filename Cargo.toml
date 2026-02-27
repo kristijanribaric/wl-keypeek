@@ -13,7 +13,8 @@ rust-ini = "0.21.3"
 tray-icon = "0.21.3"
 eframe = "0.33.3"
 egui_extras = { version = "0.33.3", features = ["all_loaders"] }
-qmk-via-api = { version = "0.6.0" }
+qmk-via-api = { path = "../rust-via-api" }
+hidapi = "2.6.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.149"
 egui-phosphor = "0.11.0"
@@ -22,7 +23,7 @@ image = "0.25.9"
 lzma-rs = "0.3"
 regex = "1.12.3"
 serialport = "4"
-zmk-studio-api = { version = "0.2.0", features = ["serial", "ble"] }
+zmk-studio-api = { path = "../zmk-studio-api", features = ["serial", "ble"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
