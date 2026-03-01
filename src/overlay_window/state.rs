@@ -23,6 +23,23 @@ pub enum ZmkTransportDraft {
     Ble { device_id: Option<String> },
 }
 
+#[derive(Clone)]
+pub enum ConnectionDraft {
+    Via { json_path: String },
+    Vial,
+    Zmk { transport: ZmkTransportDraft },
+}
+
+impl ConnectionDraft {
+    pub fn protocol_type(&self) -> ProtocolType {
+        match self {
+            ConnectionDraft::Via { .. } => ProtocolType::Via,
+            ConnectionDraft::Vial => ProtocolType::Vial,
+            ConnectionDraft::Zmk { .. } => ProtocolType::Zmk,
+        }
+    }
+}
+
 pub struct UiState {
     pub settings_visible: bool,
     pub settings_error: Option<String>,
@@ -49,8 +66,6 @@ pub struct SessionState {
 pub struct ConnectDraftState {
     pub available_devices: Vec<DiscoveredDevice>,
     pub selected_device_index: Option<usize>,
-    pub protocol_type: ProtocolType,
-    pub json_path: String,
-    pub zmk_transport: ZmkTransportDraft,
+    pub draft: ConnectionDraft,
     pub pending_connect: Option<ConnectionTask>,
 }

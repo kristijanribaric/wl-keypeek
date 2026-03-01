@@ -3,8 +3,6 @@ use std::collections::HashSet;
 
 const VIA_USAGE_PAGE: u16 = 0xff60;
 
-/// Minimal HID device info used only for device discovery.
-/// Separate from `qmk_via_api::KeyboardDeviceInfo` which is VIA-specific.
 struct HidInfo {
     vendor_id: u16,
     product_id: u16,
@@ -13,9 +11,6 @@ struct HidInfo {
     serial_number: Option<String>,
 }
 
-/// Scan every HID device on the system.  This is the integration-layer scan
-/// used only for device discovery; it is distinct from qmk_via_api's
-/// VIA-specific scan which is used for actual keyboard communication.
 fn scan_all_hid() -> Vec<HidInfo> {
     let Ok(api) = hidapi::HidApi::new() else {
         return Vec::new();
@@ -76,15 +71,11 @@ impl DiscoveredDevice {
 }
 
 pub fn discover_devices() -> Vec<DiscoveredDevice> {
-    // Scan every HID device on the system, regardless of usage page.
     let all_hid: Vec<HidInfo> = scan_all_hid();
 
     let mut devices: Vec<DiscoveredDevice> = Vec::new();
     let mut zmk_vid_pid: HashSet<(u16, u16)> = HashSet::new();
 
-    // ── VIA/Vial/QMK (USB HID, usage page 0xFF60) ──────────────────────────
-    // Deduplicate by VID+PID — the same keyboard exposes multiple HID
-    // interfaces (keyboard, consumer, etc.) and all share the same VID/PID.
     {
         let mut seen_via: HashSet<(u16, u16)> = HashSet::new();
         for dev in &all_hid {
@@ -92,7 +83,7 @@ pub fn discover_devices() -> Vec<DiscoveredDevice> {
                 continue;
             }
             if !seen_via.insert((dev.vendor_id, dev.product_id)) {
-                continue; // duplicate interface for same device
+                continue; // Duplicate interface for same device
             }
             let base_name = dev
                 .product
@@ -114,7 +105,6 @@ pub fn discover_devices() -> Vec<DiscoveredDevice> {
         }
     }
 
-    // ── ZMK over serial ─────────────────────────────────────────────────────
     for sp in zmk_rpc::scan_serial_ports() {
         // Prefer the product name from HID if the keyboard is also visible there.
         let base_name = all_hid
@@ -134,19 +124,19 @@ pub fn discover_devices() -> Vec<DiscoveredDevice> {
         zmk_vid_pid.insert((sp.vid, sp.pid));
     }
 
-    // ── ZMK over BLE ─────────────────────────────────────────────────────────
-    // Query the platform's BLE stack for devices exposing the ZMK Studio
-    // service.  On Windows, bluest queries the WinRT device store so paired
-    // keyboards are found even when not advertising; on Linux/macOS this
-    // performs an advertisement scan.  We then match device names against
-    // HID product strings to retrieve VID/PID for the combined entry.
     if let Ok(ble_devices) = zmk_rpc::scan_ble_devices() {
         for ble in ble_devices {
-            // Match by name against any non-Vial HID entry (not just VIA, since
-            // ZMK keyboards don't expose VIA).
             if let Some(hid) = all_hid.iter().find(|d| {
                 d.usage_page != VIA_USAGE_PAGE && is_possible_ble_match(d, &ble.display_name)
             }) {
+                // On Windows, BLE Studio connections for a board that is also USB-attached
+                // are unreliable; prefer showing only the serial transport in that case.
+                if cfg!(target_os = "windows")
+                    && zmk_vid_pid.contains(&(hid.vendor_id, hid.product_id))
+                {
+                    continue;
+                }
+
                 devices.push(DiscoveredDevice {
                     base_name: hid
                         .product
@@ -181,8 +171,6 @@ pub fn discover_devices() -> Vec<DiscoveredDevice> {
     devices
 }
 
-/// Fuzzy name match between a HID product name and a BLE device name to
-/// correlate a ZMK BLE device with its HID entry.
 fn is_possible_ble_match(hid: &HidInfo, ble_name: &str) -> bool {
     let hid_name = hid
         .product

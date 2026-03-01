@@ -1,5 +1,5 @@
 use crate::device_discovery::DiscoveredDevice;
-use crate::settings::{ProtocolType, Settings};
+use crate::settings::Settings;
 
 use eframe::egui;
 
@@ -9,7 +9,7 @@ mod state;
 mod ui_overlay;
 mod ui_settings;
 use state::{
-    AppConnectionState, ConnectDraftState, SessionState, SettingsState, UiState, ZmkTransportDraft,
+    AppConnectionState, ConnectDraftState, ConnectionDraft, SessionState, SettingsState, UiState,
 };
 
 const SETTINGS_FILE: &str = "settings.ini";
@@ -47,9 +47,9 @@ impl OverlayApp {
             connect: ConnectDraftState {
                 available_devices,
                 selected_device_index: None,
-                protocol_type: ProtocolType::default(),
-                json_path: String::new(),
-                zmk_transport: ZmkTransportDraft::Serial { port_name: None },
+                draft: ConnectionDraft::Via {
+                    json_path: String::new(),
+                },
                 pending_connect: None,
             },
         }
@@ -83,7 +83,9 @@ impl eframe::App for OverlayApp {
         self.ui.file_dialog.update(ctx);
 
         if let Some(path) = self.ui.file_dialog.take_picked() {
-            self.connect.json_path = path.to_string_lossy().to_string();
+            if let ConnectionDraft::Via { json_path } = &mut self.connect.draft {
+                *json_path = path.to_string_lossy().to_string();
+            }
             self.connect_from_ui();
         }
 

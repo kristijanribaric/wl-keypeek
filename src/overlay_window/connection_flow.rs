@@ -1,9 +1,8 @@
-use super::state::{AppConnectionState, ZmkTransportDraft};
+use super::state::{AppConnectionState, ConnectionDraft, ZmkTransportDraft};
 use super::{OverlayApp, SETTINGS_FILE};
 use crate::connection::{ConnectedState, ConnectionRequest, ConnectionTask};
 use crate::device_discovery::DeviceKind;
-use crate::protocols::{format_vid_pid, format_zmk_config, ZmkTransportConfig};
-use crate::settings::ProtocolType;
+use crate::protocols::{ConnectionSpec, ZmkTransportConfig};
 
 impl OverlayApp {
     pub(super) fn select_device(&mut self, index: usize) {
@@ -13,12 +12,9 @@ impl OverlayApp {
             self.session.active_layout_name.clear();
             self.session.draft_layout_name.clear();
 
-            let vid_pid = format_vid_pid(device.vid, device.pid);
             match device.kind {
                 DeviceKind::Zmk => {
-                    self.connect.protocol_type = ProtocolType::Zmk;
-                    self.connect.json_path = vid_pid;
-                    self.connect.zmk_transport = if let Some(device_id) = &device.ble_device_id {
+                    let transport = if let Some(device_id) = &device.ble_device_id {
                         ZmkTransportDraft::Ble {
                             device_id: Some(device_id.clone()),
                         }
@@ -29,36 +25,45 @@ impl OverlayApp {
                     } else {
                         ZmkTransportDraft::Ble { device_id: None }
                     };
+                    self.connect.draft = ConnectionDraft::Zmk { transport };
                 }
                 DeviceKind::Vial => {
-                    self.connect.protocol_type = ProtocolType::Vial;
-                    self.connect.json_path = vid_pid;
+                    self.connect.draft = ConnectionDraft::Vial;
                 }
                 DeviceKind::Qmk => {
-                    self.connect.protocol_type = ProtocolType::Via;
-                    self.connect.json_path = String::new();
+                    self.connect.draft = ConnectionDraft::Via {
+                        json_path: String::new(),
+                    };
                 }
             }
             self.ui.settings_error = None;
         }
     }
 
-    fn build_protocol_config(&self) -> Result<String, String> {
-        match self.connect.protocol_type {
-            ProtocolType::Vial => Ok(self.connect.json_path.trim().to_string()),
-            ProtocolType::Via => {
-                let path = self.connect.json_path.trim();
+    fn build_connection_spec(&self) -> Result<ConnectionSpec, String> {
+        let selected_device = self
+            .connect
+            .selected_device_index
+            .and_then(|i| self.connect.available_devices.get(i))
+            .ok_or_else(|| "No device selected".to_string())?;
+
+        match &self.connect.draft {
+            ConnectionDraft::Vial => Ok(ConnectionSpec::Vial {
+                vid: selected_device.vid,
+                pid: selected_device.pid,
+            }),
+            ConnectionDraft::Via { json_path } => {
+                let path = json_path.trim();
                 if path.is_empty() {
                     Err("Please provide a JSON config file path".to_string())
                 } else {
-                    Ok(path.to_string())
+                    Ok(ConnectionSpec::Via {
+                        json_path: path.to_string(),
+                    })
                 }
             }
-            ProtocolType::Zmk => {
-                let (vid, pid) = crate::protocols::parse_vid_pid(self.connect.json_path.trim())
-                    .map_err(|e| format!("Invalid ZMK VID:PID: {e}"))?;
-
-                let transport = match &self.connect.zmk_transport {
+            ConnectionDraft::Zmk { transport } => {
+                let transport = match transport {
                     ZmkTransportDraft::Serial { port_name } => {
                         let port = port_name
                             .as_ref()
@@ -73,7 +78,11 @@ impl OverlayApp {
                     }
                 };
 
-                Ok(format_zmk_config(vid, pid, &transport))
+                Ok(ConnectionSpec::Zmk {
+                    vid: selected_device.vid,
+                    pid: selected_device.pid,
+                    transport,
+                })
             }
         }
     }
@@ -116,11 +125,11 @@ impl OverlayApp {
             return;
         }
 
-        if self.connect.protocol_type == ProtocolType::Via
-            && self.connect.json_path.trim().is_empty()
-        {
-            self.ui.file_dialog.pick_file();
-            return;
+        if let ConnectionDraft::Via { json_path } = &self.connect.draft {
+            if json_path.trim().is_empty() {
+                self.ui.file_dialog.pick_file();
+                return;
+            }
         }
 
         self.begin_connect_with_current_draft();
@@ -131,7 +140,7 @@ impl OverlayApp {
             return;
         }
 
-        let protocol_config = match self.build_protocol_config() {
+        let spec = match self.build_connection_spec() {
             Ok(cfg) => cfg,
             Err(e) => {
                 self.ui.settings_error = Some(e);
@@ -140,8 +149,7 @@ impl OverlayApp {
         };
 
         let request = ConnectionRequest {
-            protocol_type: self.connect.protocol_type,
-            protocol_config,
+            spec,
             timeout: self.settings.draft.timeout,
             layout_name: if self.session.draft_layout_name.is_empty() {
                 None

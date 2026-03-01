@@ -38,7 +38,7 @@ impl OverlayApp {
         }
 
         if !matches!(
-            self.connect.protocol_type,
+            self.connect.draft.protocol_type(),
             ProtocolType::Via | ProtocolType::Vial
         ) {
             self.session.draft_layout_name = self.session.active_layout_name.clone();
