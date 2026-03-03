@@ -54,9 +54,15 @@ pub fn scan_ble_devices() -> Result<Vec<ZmkBleDevice>, Box<dyn Error>> {
     Ok(devices
         .into_iter()
         .map(|device| {
-            let display_name = device.display_name();
+            let device_id = device.device_id;
+            // Use local_name when available so matching against HID product strings
+            // is stable across platforms (display_name may include backend-specific IDs).
+            let display_name = device
+                .local_name
+                .filter(|name| !name.is_empty())
+                .unwrap_or_else(|| device_id.clone());
             ZmkBleDevice {
-                device_id: device.device_id,
+                device_id,
                 display_name,
             }
         })
