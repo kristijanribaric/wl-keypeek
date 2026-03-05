@@ -12,12 +12,15 @@ The module adds that event stream over the device connection, so the overlay sta
 ### QMK and Vial
 
 1. In your QMK userspace (or `qmk_firmware`) root, add the module repo:
+   
    ```sh
    mkdir -p modules
    git submodule add https://github.com/srwi/qmk-modules.git modules/srwi
    git submodule update --init --recursive
    ```
+   
 2. In your keymap folder, add `srwi/keypeek_layer_notify` to `keymap.json`:
+   
    ```json
    {
      "modules": [
@@ -25,24 +28,32 @@ The module adds that event stream over the device connection, so the overlay sta
      ]
    }
    ```
+   
 3. In the same keymap folder, enable RAW HID and VIA in `rules.mk`:
+   
    ```make
    RAW_ENABLE = yes
    VIA_ENABLE = yes
    ```
+   
 4. Build and flash your firmware:
+   
    ```sh
    qmk compile -kb <your_keyboard> -km <your_keymap>
    ```
-5. **QMK only:** export `keyboard_info.json`:
+   
+5. **QMK only:** Export layout information to `keyboard_info.json`:
+   
    ```sh
    qmk info -kb <your_keyboard> -m -f json > keyboard_info.json
    ```
-   This is only required for QMK, because VIA does not provide physical layout data directly over the connection, while Vial does.
+   
+   This step is only required for QMK keyboards, because VIA does not provide physical layout data directly over the connection. Vial keyboards do not require this step, as the layout data is transmitted when connecting the keyboard to KeyPeek.
 
 ### ZMK
 
 1. Add the KeyPeek module to your `zmk-config/config/west.yml`:
+
    ```yaml
    manifest:
      remotes:
