@@ -1,9 +1,6 @@
 # KeyPeek <img src="resources/icon.svg" align="right" width="15%"/>
 
-KeyPeek provides a live on-screen overlay of your keyboard, mirroring the active base and momentary layers. It is especially useful when learning complex multi-layer layouts or using boards with missing legends. The overlay updates instantly when layers change, so the view always matches your firmware state.
-
-It reflects the active layer stack (base + momentary), so the shown keys always match the current effective layout.
-It supports QMK, Vial, and ZMK keyboards.
+KeyPeek provides a live on-screen overlay of your keyboard, mirroring the active base and momentary layers. It is especially useful when learning complex multi-layer layouts or using boards with missing legends. The overlay updates instantly when layers change, so the view always matches your firmware state. KeyPeek currently supports QMK, Vial, and ZMK keyboards.
 
 <img src=".github/assets/demo.gif" alt="KeyPeek in action">
 
@@ -28,19 +25,20 @@ The module adds that event stream over the device connection, so the overlay sta
      ]
    }
    ```
-3. In the same keymap folder, enable RAW HID in `rules.mk`:
+3. In the same keymap folder, enable RAW HID and VIA in `rules.mk`:
    ```make
    RAW_ENABLE = yes
+   VIA_ENABLE = yes
    ```
 4. Build and flash your firmware:
    ```sh
    qmk compile -kb <your_keyboard> -km <your_keymap>
    ```
-5. QMK (VIA) only: export `keyboard_info.json`:
+5. **QMK only:** export `keyboard_info.json`:
    ```sh
    qmk info -kb <your_keyboard> -m -f json > keyboard_info.json
    ```
-   This is only required for QMK (VIA), because VIA does not provide physical layout data directly over the connection, while Vial does.
+   This is only required for QMK, because VIA does not provide physical layout data directly over the connection, while Vial does.
 
 ### ZMK
 
@@ -71,7 +69,7 @@ Devices are scanned when the app starts. For QMK you will be prompted to select 
 
 Appearance settings are saved to `settings.ini` in the app directory.
 
-<img src=".github/assets/settings_window.png" alt="KeyPeek settings window">
+<img src=".github/assets/settings_window.png" alt="Settings window screenshot" width="60%">
 
 # License & Attribution
 
