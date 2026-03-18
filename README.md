@@ -73,7 +73,7 @@ The module adds that event stream over the device connection, so the overlay sta
         revision: main
       - name: zmk-keypeek-layer-notifier # <-- KeyPeek module
         remote: srwi
-        revision: main
+        revision: master
   ```
 
 2. Add the `raw_hid_adapter` as an additional shield to your build, e.g. in `build.yaml`:
@@ -81,7 +81,7 @@ The module adds that event stream over the device connection, so the overlay sta
   ```yaml
   include:
     - board: nice_nano_v2
-      shield: iskra raw_hid_adapter # <-- required for Raw HID support
+      shield: <existing shields> raw_hid_adapter # <-- required for Raw HID support
       snippet: studio-rpc-usb-uart # <-- required for ZMK Studio support
   ```
 
@@ -91,6 +91,8 @@ The module adds that event stream over the device connection, so the overlay sta
   CONFIG_RAW_HID=y
   CONFIG_ZMK_STUDIO=y
   ```
+
+If your keyboard does not support ZMK Studio yet, adding support is described in the [ZMK documentation](https://zmk.dev/docs/features/studio#adding-zmk-studio-support-to-a-keyboard).
 
 KeyPeek will then read layout and keymap directly from the device for ZMK without requiring additional configuration.
 
