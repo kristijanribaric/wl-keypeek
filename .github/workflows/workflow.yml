@@ -125,21 +125,17 @@ jobs:
         id: get_version
         run: echo "VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')" >> $GITHUB_OUTPUT
 
-      - name: Build DMG
+      - name: Build ZIP
         run: |
           app_path=$(find target/${{ matrix.target }}/release/bundle/osx -name '*.app' | head -n 1)
-          hdiutil create \
-            -volname "KeyPeek" \
-            -srcfolder "$app_path" \
-            -ov \
-            -format UDZO \
-            "target/release/keypeek-v${{ steps.get_version.outputs.VERSION }}-macos-${{ matrix.arch }}.dmg"
+          zip_path="target/release/keypeek-v${{ steps.get_version.outputs.VERSION }}-macos-${{ matrix.arch }}.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$app_path" "$zip_path"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-dmg-${{ matrix.arch }}
-          path: target/release/keypeek-v${{ steps.get_version.outputs.VERSION }}-macos-${{ matrix.arch }}.dmg
+          name: macos-${{ matrix.arch }}
+          path: target/release/keypeek-v${{ steps.get_version.outputs.VERSION }}-macos-${{ matrix.arch }}.zip
 
   create-release:
     runs-on: ubuntu-latest
@@ -164,7 +160,7 @@ jobs:
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: macos-dmg-*
+          pattern: macos-*
           path: ./artifacts
           merge-multiple: true
 
