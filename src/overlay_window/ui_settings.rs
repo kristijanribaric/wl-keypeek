@@ -185,6 +185,16 @@ impl OverlayApp {
                             );
                             ui.end_row();
 
+                            ui.label("Key label font scale");
+                            ui.add_sized(
+                                ui.available_size(),
+                                egui::DragValue::new(&mut self.settings.draft.font_size_multiplier)
+                                    .speed(0.01)
+                                    .range(0.5..=1.5)
+                                    .suffix(" x"),
+                            );
+                            ui.end_row();
+
                             ui.label("Display duration");
                             ui.add_sized(
                                 ui.available_size(),

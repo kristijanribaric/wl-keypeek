@@ -15,6 +15,7 @@ impl OverlayApp {
         color: egui::Color32,
     ) -> LabelGalleys {
         let size = self.settings.active.size as f32;
+        let font_scale = self.settings.active.font_size_multiplier;
         let create_galley =
             |text: String, fid: egui::FontId| ui.painter().layout_no_wrap(text, fid, color);
         let fits_width =
@@ -22,7 +23,7 @@ impl OverlayApp {
         let max_width = rect.width() * 0.85;
 
         if let Some(symbol) = &key.symbol {
-            let symbol_font = egui::FontId::proportional(0.33 * size);
+            let symbol_font = egui::FontId::proportional(0.33 * size * font_scale);
             let symbol_galley = create_galley(symbol.clone(), symbol_font);
 
             if !key.tap.is_empty() {
@@ -161,6 +162,7 @@ impl OverlayApp {
         let anchor_params = self.get_anchor_params();
         let mut window_open = true;
         let size = self.settings.active.size as f32;
+        let font_scale = self.settings.active.font_size_multiplier;
 
         Window::new("KeyPeek")
             .open(&mut window_open)
@@ -209,7 +211,7 @@ impl OverlayApp {
                         egui::StrokeKind::Outside,
                     );
 
-                    let font = egui::FontId::proportional(0.25 * size);
+                    let font = egui::FontId::proportional(0.25 * size * font_scale);
                     match self.generate_key_label_galleys(ui, &layout_key, rect, font, font_color) {
                         LabelGalleys {
                             symbol: Some(symbol_galley),

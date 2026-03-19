@@ -164,6 +164,7 @@ impl Default for ThemeSettings {
 #[derive(Clone)]
 pub struct Settings {
     pub size: i32,
+    pub font_size_multiplier: f32,
     pub position: WindowPosition,
     pub timeout: u64,
     pub margin: u32,
@@ -174,6 +175,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             size: 60,
+            font_size_multiplier: 1.0,
             position: WindowPosition::BottomRight,
             timeout: 2000,
             margin: 10,
@@ -187,6 +189,10 @@ impl Settings {
         let mut conf = Ini::new();
         let mut section = conf.with_section(Some("settings"));
         section.set("size", self.size.to_string());
+        section.set(
+            "font_size_multiplier",
+            self.font_size_multiplier.to_string(),
+        );
         section.set("position", self.position.to_string());
         section.set("timeout", self.timeout.to_string());
         section.set("margin", self.margin.to_string());
@@ -203,6 +209,10 @@ impl Settings {
         let mut s = Settings::default();
         if let Some(val) = section.get("size") {
             s.size = val.parse().unwrap_or(s.size);
+        }
+        if let Some(val) = section.get("font_size_multiplier") {
+            let parsed = val.parse::<f32>().unwrap_or(s.font_size_multiplier);
+            s.font_size_multiplier = parsed.clamp(0.1, 2.0);
         }
         if let Some(val) = section.get("position") {
             if let Ok(parsed) = val.parse() {

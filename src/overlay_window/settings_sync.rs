@@ -8,6 +8,7 @@ impl OverlayApp {
     pub(super) fn apply_live_visual_settings(&mut self) {
         let old_timeout = self.settings.active.timeout;
         let changed = self.settings.active.size != self.settings.draft.size
+            || self.settings.active.font_size_multiplier != self.settings.draft.font_size_multiplier
             || self.settings.active.margin != self.settings.draft.margin
             || self.settings.active.position != self.settings.draft.position
             || self.settings.active.timeout != self.settings.draft.timeout
@@ -18,6 +19,7 @@ impl OverlayApp {
         }
 
         self.settings.active.size = self.settings.draft.size;
+        self.settings.active.font_size_multiplier = self.settings.draft.font_size_multiplier;
         self.settings.active.margin = self.settings.draft.margin;
         self.settings.active.position = self.settings.draft.position;
         self.settings.active.timeout = self.settings.draft.timeout;
