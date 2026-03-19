@@ -12,14 +12,14 @@ pub struct Keyboard {
     matrix: Arc<Mutex<KeyMatrix>>,
     layer_state: Arc<Mutex<u32>>,
     default_layer_state: Arc<Mutex<u32>>,
-    timeout_ms: Arc<Mutex<u64>>,
+    timeout_ms: Arc<Mutex<i64>>,
 }
 
 impl Keyboard {
     pub fn new(
         protocol: Box<dyn KeyboardProtocol>,
         layout_name: String,
-        timeout: u64,
+        timeout: i64,
     ) -> Result<Self, String> {
         let definition = protocol.get_layout_definition();
 
@@ -72,8 +72,13 @@ impl Keyboard {
                         *time_to_hide_clone.lock().unwrap() = None;
                     } else {
                         let timeout = *timeout_clone.lock().unwrap();
-                        let time_to_hide = Instant::now() + Duration::from_millis(timeout);
-                        *time_to_hide_clone.lock().unwrap() = Some(time_to_hide);
+                        if timeout < 0 {
+                            *time_to_hide_clone.lock().unwrap() = None;
+                        } else {
+                            let time_to_hide =
+                                Instant::now() + Duration::from_millis(timeout as u64);
+                            *time_to_hide_clone.lock().unwrap() = Some(time_to_hide);
+                        }
                     }
 
                     *layer_state_clone.lock().unwrap() = layer_state;
@@ -129,7 +134,7 @@ impl Keyboard {
         self.matrix.lock().unwrap().is_pressed(row, col)
     }
 
-    pub fn set_timeout(&self, timeout: u64) {
+    pub fn set_timeout(&self, timeout: i64) {
         *self.timeout_ms.lock().unwrap() = timeout;
     }
 

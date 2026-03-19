@@ -166,7 +166,7 @@ pub struct Settings {
     pub size: i32,
     pub font_size_multiplier: f32,
     pub position: WindowPosition,
-    pub timeout: u64,
+    pub timeout: i64,
     pub margin: u32,
     pub theme: ThemeSettings,
 }
@@ -220,7 +220,12 @@ impl Settings {
             }
         }
         if let Some(val) = section.get("timeout") {
-            s.timeout = val.parse().unwrap_or(s.timeout);
+            let parsed = val.parse::<i64>().unwrap_or(s.timeout);
+            s.timeout = if parsed < 0 {
+                -1
+            } else {
+                parsed.clamp(0, 14_999)
+            };
         }
         if let Some(val) = section.get("margin") {
             s.margin = val.parse().unwrap_or(s.margin);

@@ -6,7 +6,7 @@ const ZMK_LOCKED_ERROR: &str = "Device is locked. Please press the ZMK Studio un
 
 pub struct ConnectionRequest {
     pub spec: ConnectionSpec,
-    pub timeout: u64,
+    pub timeout: i64,
     pub layout_name: Option<String>,
 }
 

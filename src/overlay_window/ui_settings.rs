@@ -4,6 +4,22 @@ use crate::settings::WindowPosition;
 use eframe::egui::{self, Window};
 
 impl OverlayApp {
+    fn timeout_to_ui_value(timeout: i64) -> u32 {
+        if timeout < 0 {
+            15_000
+        } else {
+            (timeout as u32).min(14_999)
+        }
+    }
+
+    fn ui_value_to_timeout(value: u32) -> i64 {
+        if value >= 15_000 {
+            -1
+        } else {
+            value as i64
+        }
+    }
+
     pub(super) fn draw_settings_window(&mut self, ctx: &egui::Context) {
         let mut open = self.ui.settings_visible;
         let connection_locked = matches!(
@@ -196,13 +212,22 @@ impl OverlayApp {
                             ui.end_row();
 
                             ui.label("Display duration");
+                            let mut timeout_ui =
+                                Self::timeout_to_ui_value(self.settings.draft.timeout);
                             ui.add_sized(
                                 ui.available_size(),
-                                egui::DragValue::new(&mut self.settings.draft.timeout)
+                                egui::DragValue::new(&mut timeout_ui)
                                     .speed(50)
-                                    .range(0..=60_000)
-                                    .suffix(" ms"),
+                                    .range(0..=15_000)
+                                    .custom_formatter(|value, _range| {
+                                        if value >= 15_000.0 {
+                                            "∞".to_string()
+                                        } else {
+                                            format!("{} ms", value as i64)
+                                        }
+                                    }),
                             );
+                            self.settings.draft.timeout = Self::ui_value_to_timeout(timeout_ui);
                             ui.end_row();
                         });
                 });
