@@ -15,6 +15,7 @@ use state::{
 const SETTINGS_FILE: &str = "settings.ini";
 
 pub struct OverlayApp {
+    _tray_icon: tray_icon::TrayIcon,
     ui: UiState,
     settings: SettingsState,
     session: SessionState,
@@ -22,8 +23,13 @@ pub struct OverlayApp {
 }
 
 impl OverlayApp {
-    pub fn new(base_settings: Settings, available_devices: Vec<DiscoveredDevice>) -> Self {
+    pub fn new(
+        tray_icon: tray_icon::TrayIcon,
+        base_settings: Settings,
+        available_devices: Vec<DiscoveredDevice>,
+    ) -> Self {
         Self {
+            _tray_icon: tray_icon,
             ui: UiState {
                 settings_visible: true,
                 settings_error: None,

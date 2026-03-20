@@ -19,8 +19,6 @@ use settings::Settings;
 const SETTINGS_FILE: &str = "settings.ini";
 
 fn main() -> Result<(), eframe::Error> {
-    let _tray_icon = tray::create_tray_icon();
-
     let settings = Settings::load_from_file(SETTINGS_FILE).unwrap_or_default();
     let available_devices = discover_devices();
 
@@ -46,12 +44,17 @@ fn main() -> Result<(), eframe::Error> {
         options,
         Box::new(move |cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
+            let tray_icon = tray::create_tray_icon();
 
             let mut fonts = egui::FontDefinitions::default();
             egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
             cc.egui_ctx.set_fonts(fonts);
 
-            Ok(Box::new(OverlayApp::new(settings, available_devices)))
+            Ok(Box::new(OverlayApp::new(
+                tray_icon,
+                settings,
+                available_devices,
+            )))
         }),
     )
 }
