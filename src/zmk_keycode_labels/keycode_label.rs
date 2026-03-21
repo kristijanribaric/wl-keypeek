@@ -206,6 +206,14 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             tap: Label::new("+\n="),
             ..Default::default()
         }),
+        Keycode::LEFT_BRACKET => Some(LayoutKey {
+            tap: Label::new("{\n["),
+            ..Default::default()
+        }),
+        Keycode::RIGHT_BRACKET => Some(LayoutKey {
+            tap: Label::new("}\n]"),
+            ..Default::default()
+        }),
         Keycode::BACKSLASH => Some(LayoutKey {
             tap: Label::new("|\n\\"),
             ..Default::default()
@@ -735,7 +743,6 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
-        // These are keyboard-page HID usage codes that don't exist in QMK.
         Keycode::K_PLAY_PAUSE => Some(LayoutKey {
             symbol: Some(egui_phosphor::regular::PLAY_PAUSE.to_string()),
             ..Default::default()
@@ -789,11 +796,11 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::K_SCROLL_UP => Some(LayoutKey {
-            tap: Label::with_short("Scroll Up", "Scr↑"),
+            tap: Label::with_short("Scroll Up", "ScrUp"),
             ..Default::default()
         }),
         Keycode::K_SCROLL_DOWN => Some(LayoutKey {
-            tap: Label::with_short("Scroll Down", "Scr↓"),
+            tap: Label::with_short("Scroll Down", "ScrDn"),
             ..Default::default()
         }),
         Keycode::K_EDIT => Some(LayoutKey {
@@ -856,6 +863,14 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             tap: Label::new("+"),
             ..Default::default()
         }),
+        Keycode::LEFT_BRACE => Some(LayoutKey {
+            tap: Label::new("{"),
+            ..Default::default()
+        }),
+        Keycode::RIGHT_BRACE => Some(LayoutKey {
+            tap: Label::new("}"),
+            ..Default::default()
+        }),
         Keycode::PIPE => Some(LayoutKey {
             tap: Label::new("|"),
             ..Default::default()
@@ -888,6 +903,26 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             tap: Label::new("|"),
             ..Default::default()
         }),
+        Keycode::LEFT_PARENTHESIS => Some(LayoutKey {
+            tap: Label::new("("),
+            ..Default::default()
+        }),
+        Keycode::RIGHT_PARENTHESIS => Some(LayoutKey {
+            tap: Label::new(")"),
+            ..Default::default()
+        }),
+        Keycode::DOUBLE_QUOTES => Some(LayoutKey {
+            tap: Label::new("\""),
+            ..Default::default()
+        }),
+        Keycode::GREATER_THAN => Some(LayoutKey {
+            tap: Label::new(">"),
+            ..Default::default()
+        }),
+        Keycode::NON_US_BACKSLASH => Some(LayoutKey {
+            tap: Label::new("NUBS"),
+            ..Default::default()
+        }),
         Keycode::C_POWER => Some(LayoutKey {
             tap: Label::new("Power"),
             ..Default::default()
@@ -913,19 +948,19 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::C_MENU_UP => Some(LayoutKey {
-            tap: Label::with_short("Menu Up", "M↑"),
+            tap: Label::with_short("Menu Up", "MUp"),
             ..Default::default()
         }),
         Keycode::C_MENU_DOWN => Some(LayoutKey {
-            tap: Label::with_short("Menu Down", "M↓"),
+            tap: Label::with_short("Menu Down", "MDn"),
             ..Default::default()
         }),
         Keycode::C_MENU_LEFT => Some(LayoutKey {
-            tap: Label::with_short("Menu Left", "M←"),
+            tap: Label::with_short("Menu Left", "MLft"),
             ..Default::default()
         }),
         Keycode::C_MENU_RIGHT => Some(LayoutKey {
-            tap: Label::with_short("Menu Right", "M→"),
+            tap: Label::with_short("Menu Right", "MRgt"),
             ..Default::default()
         }),
         Keycode::C_MENU_ESCAPE => Some(LayoutKey {
@@ -1223,6 +1258,142 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             tap: Label::new("Movies"),
             ..Default::default()
         }),
+        Keycode::C_ALTERNATE_AUDIO_INCREMENT => Some(LayoutKey {
+            tap: Label::with_short("Alt Audio Inc", "Aud+"),
+            ..Default::default()
+        }),
+        Keycode::C_BRIGHTNESS_INC => Some(LayoutKey {
+            symbol: Some(egui_phosphor::regular::SUN.to_string()),
+            ..Default::default()
+        }),
+        Keycode::C_BRIGHTNESS_DEC => Some(LayoutKey {
+            symbol: Some(egui_phosphor::regular::SUN_DIM.to_string()),
+            ..Default::default()
+        }),
+        Keycode::C_BRIGHTNESS_MINIMUM => Some(LayoutKey {
+            tap: Label::with_short("Brightness Min", "BriMin"),
+            ..Default::default()
+        }),
+        Keycode::C_BRIGHTNESS_MAXIMUM => Some(LayoutKey {
+            tap: Label::with_short("Brightness Max", "BriMax"),
+            ..Default::default()
+        }),
+        Keycode::C_BRIGHTNESS_AUTO => Some(LayoutKey {
+            tap: Label::with_short("Brightness Auto", "BriAuto"),
+            ..Default::default()
+        }),
+        Keycode::C_BACKLIGHT_TOGGLE => Some(LayoutKey {
+            tap: Label::with_short("Backlight Toggle", "BLTog"),
+            ..Default::default()
+        }),
+        Keycode::C_MEDIA_COMPUTER => Some(LayoutKey {
+            tap: Label::new("Computer"),
+            ..Default::default()
+        }),
+        Keycode::C_MEDIA_GUIDE => Some(LayoutKey {
+            tap: Label::new("Guide"),
+            ..Default::default()
+        }),
+        Keycode::C_MEDIA_VIDEOPHONE => Some(LayoutKey {
+            tap: Label::with_short("Video Phone", "VidPh"),
+            ..Default::default()
+        }),
+        Keycode::C_MEDIA_MESSAGES => Some(LayoutKey {
+            tap: Label::new("Messages"),
+            ..Default::default()
+        }),
+        Keycode::C_MEDIA_SATELLITE => Some(LayoutKey {
+            tap: Label::with_short("Satellite", "Sat"),
+            ..Default::default()
+        }),
+        Keycode::C_KEYBOARD_INPUT_ASSIST_PREVIOUS => Some(LayoutKey {
+            tap: Label::with_short("KB Assist Prev", "KBIALft"),
+            ..Default::default()
+        }),
+        Keycode::C_KEYBOARD_INPUT_ASSIST_NEXT => Some(LayoutKey {
+            tap: Label::with_short("KB Assist Next", "KBIARgt"),
+            ..Default::default()
+        }),
+        Keycode::C_KEYBOARD_INPUT_ASSIST_PREVIOUS_GROUP => Some(LayoutKey {
+            tap: Label::with_short("KB Assist Prev Group", "KBIAGLft"),
+            ..Default::default()
+        }),
+        Keycode::C_KEYBOARD_INPUT_ASSIST_NEXT_GROUP => Some(LayoutKey {
+            tap: Label::with_short("KB Assist Next Group", "KBIAGRgt"),
+            ..Default::default()
+        }),
+        Keycode::C_KEYBOARD_INPUT_ASSIST_ACCEPT => Some(LayoutKey {
+            tap: Label::with_short("KB Assist Accept", "KBIAOK"),
+            ..Default::default()
+        }),
+        Keycode::C_KEYBOARD_INPUT_ASSIST_CANCEL => Some(LayoutKey {
+            tap: Label::with_short("KB Assist Cancel", "KBIAX"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_CCC => Some(LayoutKey {
+            tap: Label::new("CCC"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_GRAPHICS_EDITOR => Some(LayoutKey {
+            tap: Label::with_short("Graphics Editor", "Gfx"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_PRESENTATION => Some(LayoutKey {
+            tap: Label::with_short("Presentation", "Present"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_CONTACTS => Some(LayoutKey {
+            tap: Label::new("Contacts"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_TASK_MANAGER => Some(LayoutKey {
+            tap: Label::with_short("Task Manager", "TaskMgr"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_AV_CAPTURE_PLAYBACK => Some(LayoutKey {
+            tap: Label::with_short("AV Capture Playback", "AVCap"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_MY_COMPUTER => Some(LayoutKey {
+            tap: Label::new("My Comp"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_PREVIOUS_TASK => Some(LayoutKey {
+            tap: Label::with_short("Previous Task", "PrevTk"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_NEXT_TASK => Some(LayoutKey {
+            tap: Label::with_short("Next Task", "NextTk"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_SELECT_TASK => Some(LayoutKey {
+            tap: Label::with_short("Select Task", "SelTk"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_INSTANT_MESSAGING => Some(LayoutKey {
+            tap: Label::with_short("Instant Messaging", "IM"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_OEM_FEATURES => Some(LayoutKey {
+            tap: Label::with_short("OEM Features", "OEM"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_KEYBOARD_LAYOUT => Some(LayoutKey {
+            tap: Label::with_short("Keyboard Layout", "KbdLy"),
+            ..Default::default()
+        }),
+        Keycode::C_AL_SCREENSAVER => Some(LayoutKey {
+            tap: Label::with_short("Screen Saver", "ScrSv"),
+            ..Default::default()
+        }),
+        Keycode::C_AC_DESKTOP_SHOW_ALL_WINDOWS => Some(LayoutKey {
+            tap: Label::with_short("Show All Windows", "AllWin"),
+            ..Default::default()
+        }),
+        Keycode::C_AC_DESKTOP_SHOW_ALL_APPLICATIONS => Some(LayoutKey {
+            tap: Label::with_short("Show All Apps", "AllApp"),
+            ..Default::default()
+        }),
         Keycode::C_AC_NEW => Some(LayoutKey {
             tap: Label::new("New"),
             ..Default::default()
@@ -1320,11 +1491,11 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::C_AC_SCROLL_UP => Some(LayoutKey {
-            tap: Label::with_short("Scroll Up", "Scr↑"),
+            tap: Label::with_short("Scroll Up", "ScrUp"),
             ..Default::default()
         }),
         Keycode::C_AC_SCROLL_DOWN => Some(LayoutKey {
-            tap: Label::with_short("Scroll Down", "Scr↓"),
+            tap: Label::with_short("Scroll Down", "ScrDn"),
             ..Default::default()
         }),
         Keycode::C_AC_EDIT => Some(LayoutKey {
@@ -1364,7 +1535,5 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             symbol: Some(egui_phosphor::regular::GLOBE.to_string()),
             ..Default::default()
         }),
-        #[allow(unreachable_patterns)]
-        _ => None,
     }
 }

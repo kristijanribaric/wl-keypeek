@@ -2543,7 +2543,6 @@ dependencies = [
  "image",
  "lzma-rs",
  "qmk-via-api",
- "regex",
  "rust-ini",
  "serde",
  "serde_json",
@@ -6581,7 +6580,7 @@ checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
 [[package]]
 name = "zmk-studio-api"
 version = "0.3.0"
-source = "git+https://github.com/srwi/zmk-studio-api#2dd8dbe6eb903b30e4d36917c55dbb00efb1eeea"
+source = "git+https://github.com/srwi/zmk-studio-api#6c00eb175f9cabbd3fdcee3d4ad6bcaddd0adf2a"
 dependencies = [
  "bluest",
  "futures",
