@@ -71,7 +71,9 @@ impl eframe::App for OverlayApp {
         }
     }
 
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = ui.ctx();
+
         // On macOS, with_maximized(true) doesn't work for undecorated transparent
         // windows. Explicitly size the window to fill the monitor on the first frame.
         #[cfg(target_os = "macos")]
