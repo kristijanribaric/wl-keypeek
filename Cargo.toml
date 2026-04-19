@@ -5,21 +5,21 @@ description = "Keyboard layer overlay for VIA, Vial, and ZMK"
 authors = ["Stephan Rumswinkel"]
 repository = "https://github.com/srwi/keypeek"
 readme = "README.md"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 
 [dependencies]
 rust-ini = "0.21.3"
 dirs = "6.0.0"
 tray-icon = "0.22.0"
-eframe = "0.33.3"
-egui_extras = { version = "0.33.3", features = ["all_loaders"] }
+eframe = { version = "0.34.1", features = ["glow"] }
+egui_extras = { version = "0.34.1", features = ["all_loaders"] }
 qmk-via-api = { version = "0.7.0" }
 hidapi = "2.6.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.149"
-egui-phosphor = "0.11.0"
-egui-file-dialog = "0.12.0"
+egui-phosphor = "0.12.0"
+egui-file-dialog = "0.13.0"
 image = "0.25.10"
 lzma-rs = "0.3"
 serialport = "4.9.0"

@@ -23,6 +23,7 @@ fn main() -> Result<(), eframe::Error> {
     let available_devices = discover_devices();
 
     let options = eframe::NativeOptions {
+        renderer: eframe::Renderer::Glow, // Use glow renderer for transparent background (https://github.com/emilk/egui/issues/4451)
         viewport: egui::ViewportBuilder::default()
             .with_decorations(false)
             .with_taskbar(false)
