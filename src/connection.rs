@@ -1,5 +1,6 @@
 use crate::keyboard::Keyboard;
 use crate::protocols::{connect_protocol, ConnectionSpec, KeyboardDefinition, KeyboardProtocol};
+use crate::ui_wake::UiWake;
 use std::sync::mpsc::{self, TryRecvError};
 
 const ZMK_LOCKED_ERROR: &str = "Device is locked. Please press the ZMK Studio unlock key combination on your keyboard, then click Connect again.";
@@ -53,11 +54,12 @@ pub struct ConnectionTask {
 }
 
 impl ConnectionTask {
-    pub fn start(request: ConnectionRequest) -> Self {
+    pub fn start(request: ConnectionRequest, ui_wake: UiWake) -> Self {
         let (tx, rx) = mpsc::channel();
         std::thread::spawn(move || {
-            let result = build_connected_state(request);
+            let result = build_connected_state(request, ui_wake.clone());
             let _ = tx.send(result);
+            ui_wake.request_repaint();
         });
         Self { rx }
     }
@@ -73,15 +75,23 @@ impl ConnectionTask {
     }
 }
 
-pub fn build_connected_state(request: ConnectionRequest) -> Result<ConnectedState, String> {
+pub fn build_connected_state(
+    request: ConnectionRequest,
+    ui_wake: UiWake,
+) -> Result<ConnectedState, String> {
     let protocol = request.connect_protocol()?;
 
     let layout_names = protocol.get_layout_definition().get_layout_names();
     let selected_layout_name = request.pick_layout_name(&layout_names)?;
     let definition = protocol.get_layout_definition().clone();
 
-    let keyboard = Keyboard::new(protocol, selected_layout_name.clone(), request.timeout)
-        .map_err(|e| format!("Failed to create keyboard: {e}"))?;
+    let keyboard = Keyboard::new(
+        protocol,
+        selected_layout_name.clone(),
+        request.timeout,
+        ui_wake,
+    )
+    .map_err(|e| format!("Failed to create keyboard: {e}"))?;
 
     Ok(ConnectedState {
         definition,

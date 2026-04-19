@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 use crate::key_matrix::KeyMatrix;
 use crate::layout_key::LayoutKey;
 use crate::protocols::{KeyboardLayout, KeyboardProtocol};
+use crate::ui_wake::UiWake;
 
 pub struct Keyboard {
     pub layout: KeyboardLayout,
@@ -20,6 +21,7 @@ impl Keyboard {
         protocol: Box<dyn KeyboardProtocol>,
         layout_name: String,
         timeout: i64,
+        ui_wake: UiWake,
     ) -> Result<Self, String> {
         let definition = protocol.get_layout_definition();
 
@@ -57,6 +59,7 @@ impl Keyboard {
 
         thread::spawn(move || loop {
             if let Ok(response) = protocol.hid_read() {
+                let mut needs_repaint = false;
                 if response[0] == 0xff {
                     let size = response[1] as usize;
 
@@ -83,6 +86,7 @@ impl Keyboard {
 
                     *layer_state_clone.lock().unwrap() = layer_state;
                     *default_layer_state_clone.lock().unwrap() = default_layer_state;
+                    needs_repaint = true;
                 } else if response[0] == 0xF1 {
                     let row = response[1] as usize;
                     let col = response[2] as usize;
@@ -90,6 +94,15 @@ impl Keyboard {
                     if let Ok(mut mat) = matrix_clone.lock() {
                         mat.set_pressed(row, col, pressed != 0);
                     }
+                    needs_repaint = time_to_hide_clone
+                        .lock()
+                        .unwrap()
+                        .as_ref()
+                        .is_none_or(|time_to_hide| Instant::now() < *time_to_hide);
+                }
+
+                if needs_repaint {
+                    ui_wake.request_repaint();
                 }
             }
         });

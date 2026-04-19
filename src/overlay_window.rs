@@ -1,7 +1,9 @@
 use crate::device_discovery::DiscoveredDevice;
 use crate::settings::Settings;
+use crate::ui_wake::UiWake;
 
 use eframe::egui;
+use std::time::Instant;
 
 mod connection_flow;
 mod settings_sync;
@@ -16,6 +18,7 @@ const SETTINGS_FILE: &str = "settings.ini";
 
 pub struct OverlayApp {
     _tray_icon: tray_icon::TrayIcon,
+    ui_wake: UiWake,
     ui: UiState,
     settings: SettingsState,
     session: SessionState,
@@ -25,15 +28,18 @@ pub struct OverlayApp {
 impl OverlayApp {
     pub fn new(
         tray_icon: tray_icon::TrayIcon,
+        ui_wake: UiWake,
         base_settings: Settings,
         available_devices: Vec<DiscoveredDevice>,
     ) -> Self {
         Self {
             _tray_icon: tray_icon,
+            ui_wake,
             ui: UiState {
                 settings_visible: true,
                 settings_error: None,
                 settings_warning: None,
+                mouse_passthrough: None,
                 #[cfg(target_os = "macos")]
                 macos_maximized: false,
                 file_dialog: egui_file_dialog::FileDialog::new(),
@@ -58,6 +64,40 @@ impl OverlayApp {
                 },
                 pending_connect: None,
             },
+        }
+    }
+
+    fn sync_mouse_passthrough(&mut self, ctx: &egui::Context) {
+        let mouse_passthrough = !self.ui.settings_visible;
+        if self.ui.mouse_passthrough == Some(mouse_passthrough) {
+            return;
+        }
+
+        ctx.send_viewport_cmd(egui::ViewportCommand::MousePassthrough(mouse_passthrough));
+        self.ui.mouse_passthrough = Some(mouse_passthrough);
+    }
+
+    fn schedule_overlay_hide_repaint(&self, ctx: &egui::Context) {
+        if self.ui.settings_visible {
+            return;
+        }
+
+        let AppConnectionState::Connected { keyboard } = &self.session.connection else {
+            return;
+        };
+
+        let Some(time_to_hide) = keyboard
+            .time_to_hide_overlay
+            .lock()
+            .unwrap()
+            .as_ref()
+            .copied()
+        else {
+            return;
+        };
+
+        if let Some(delay) = time_to_hide.checked_duration_since(Instant::now()) {
+            ctx.request_repaint_after(delay);
         }
     }
 }
@@ -95,9 +135,7 @@ impl eframe::App for OverlayApp {
             self.connect_from_ui();
         }
 
-        ctx.send_viewport_cmd(egui::ViewportCommand::MousePassthrough(
-            !self.ui.settings_visible,
-        ));
+        self.sync_mouse_passthrough(ctx);
 
         if let AppConnectionState::Connected { keyboard } = &self.session.connection {
             if self.overlay_visible() {
@@ -137,6 +175,6 @@ impl eframe::App for OverlayApp {
                 });
         }
 
-        ctx.request_repaint();
+        self.schedule_overlay_hide_repaint(ctx);
     }
 }

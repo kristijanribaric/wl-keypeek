@@ -158,7 +158,7 @@ impl OverlayApp {
             },
         };
 
-        self.connect.pending_connect = Some(ConnectionTask::start(request));
+        self.connect.pending_connect = Some(ConnectionTask::start(request, self.ui_wake.clone()));
         self.ui.settings_error = None;
     }
 

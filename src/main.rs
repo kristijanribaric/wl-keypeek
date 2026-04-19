@@ -9,12 +9,14 @@ mod protocols;
 mod qmk_keycode_labels;
 mod settings;
 mod tray;
+mod ui_wake;
 mod zmk_keycode_labels;
 
 use device_discovery::discover_devices;
 use eframe::egui;
 use overlay_window::OverlayApp;
 use settings::Settings;
+use ui_wake::UiWake;
 
 const SETTINGS_FILE: &str = "settings.ini";
 
@@ -52,6 +54,7 @@ fn main() -> Result<(), eframe::Error> {
 
             Ok(Box::new(OverlayApp::new(
                 tray_icon,
+                UiWake::from_ctx(&cc.egui_ctx),
                 settings,
                 available_devices,
             )))
