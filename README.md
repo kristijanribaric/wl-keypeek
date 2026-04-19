@@ -104,8 +104,6 @@ KeyPeek will read layout and keymap directly from the device for ZMK without req
 
 Devices are scanned when the app starts. For QMK you will be prompted to select the `keyboard_info.json` generated from your keymap when you connect. For Vial and ZMK, just select the connected device from the dropdown, since they provide layout information directly.
 
-Appearance settings are saved to `settings.ini` in the app directory.
-
 <img src=".github/assets/settings_window.png" alt="Settings window screenshot" width="60%">
 
 # License & Attribution

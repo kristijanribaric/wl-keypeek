@@ -6,7 +6,6 @@
 # having git ignore such leftovers. You can use `.git/info/exclude` to
 # configure your local ignore list.
 
-settings.ini
 keyboard_configs/
 
 ## File system
