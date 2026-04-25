@@ -1,4 +1,4 @@
-# KeyPeek <img src="resources/icon.svg" align="right" width="15%"/>
+# wl-KeyPeek <img src="resources/icon.svg" align="right" width="15%"/>
 
 KeyPeek provides a live on-screen overlay of your keyboard, mirroring the active base and momentary layers. It is especially useful when learning complex multi-layer layouts or using boards with missing legends. The overlay updates instantly when layers change, so the view always matches your firmware state. KeyPeek currently supports QMK, Vial, and ZMK keyboards.
 
@@ -105,6 +105,40 @@ KeyPeek will read layout and keymap directly from the device for ZMK without req
 Devices are scanned when the app starts. For QMK you will be prompted to select the `keyboard_info.json` generated from your keymap when you connect. For Vial and ZMK, just select the connected device from the dropdown, since they provide layout information directly.
 
 <img src=".github/assets/settings_window.png" alt="Settings window screenshot" width="60%">
+
+## Wayland-native GTK4 overlay
+
+This branch runs as a Wayland-native overlay using GTK4 + `gtk4-layer-shell`.
+On startup it auto-discovers ZMK devices, prefers serial transport when available, and keeps the overlay hidden until a non-base layer becomes active.
+
+Build and install the binary as `~/.local/bin/keypeek-wayland`:
+
+```bash
+cargo build --release
+install -Dm755 target/release/keypeek "$HOME/.local/bin/keypeek-wayland"
+```
+
+### Systemd user service
+
+A service template is included at `resources/keypeek-wayland.service`.
+Install and enable it:
+
+```bash
+install -Dm644 resources/keypeek-wayland.service "$HOME/.config/systemd/user/keypeek-wayland.service"
+systemctl --user daemon-reload
+systemctl --user enable --now keypeek-wayland.service
+```
+
+### Udev rule for hidraw access
+
+A rule template is included at `resources/99-keypeek.rules`.
+Install it and reload udev rules:
+
+```bash
+sudo install -Dm644 resources/99-keypeek.rules /etc/udev/rules.d/99-keypeek.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
 
 # License & Attribution
 

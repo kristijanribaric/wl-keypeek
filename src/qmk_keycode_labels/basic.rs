@@ -160,7 +160,6 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_ENTER => Some(LayoutKey {
             tap: Label::new("Enter"),
-            symbol: Some(egui_phosphor::regular::ARROW_ELBOW_DOWN_LEFT.to_string()),
             kind: KeycodeKind::Special,
             ..Default::default()
         }),
@@ -171,13 +170,11 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_BACKSPACE => Some(LayoutKey {
             tap: Label::new("Backspace"),
-            symbol: Some(egui_phosphor::regular::BACKSPACE.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
         Keycode::KC_TAB => Some(LayoutKey {
             tap: Label::new("Tab"),
-            symbol: Some(egui_phosphor::regular::ARROWS_LEFT_RIGHT.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -235,7 +232,6 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_CAPS_LOCK => Some(LayoutKey {
             tap: Label::with_short("Capslock", "Caps"),
-            symbol: Some(egui_phosphor::regular::ARROW_FAT_LINE_UP.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -325,25 +321,21 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_RIGHT => Some(LayoutKey {
             tap: Label::default(),
-            symbol: Some(egui_phosphor::regular::ARROW_RIGHT.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
         Keycode::KC_LEFT => Some(LayoutKey {
             tap: Label::default(),
-            symbol: Some(egui_phosphor::regular::ARROW_LEFT.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
         Keycode::KC_DOWN => Some(LayoutKey {
             tap: Label::default(),
-            symbol: Some(egui_phosphor::regular::ARROW_DOWN.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
         Keycode::KC_UP => Some(LayoutKey {
             tap: Label::default(),
-            symbol: Some(egui_phosphor::regular::ARROW_UP.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -369,7 +361,6 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_KP_ENTER => Some(LayoutKey {
             tap: Label::new("Enter"),
-            symbol: Some(egui_phosphor::regular::ARROW_ELBOW_DOWN_LEFT.to_string()),
             ..Default::default()
         }),
         Keycode::KC_KP_1 => Some(LayoutKey {
@@ -422,12 +413,10 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_APPLICATION => Some(LayoutKey {
             tap: Label::new("Menu"),
-            symbol: Some(egui_phosphor::regular::LIST.to_string()),
             ..Default::default()
         }),
         Keycode::KC_KB_POWER => Some(LayoutKey {
             tap: Label::new("Power"),
-            symbol: Some(egui_phosphor::regular::POWER.to_string()),
             ..Default::default()
         }),
         Keycode::KC_KP_EQUAL => Some(LayoutKey {
@@ -527,15 +516,12 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::KC_KB_MUTE => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_X.to_string()),
             ..Default::default()
         }),
         Keycode::KC_KB_VOLUME_UP => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_HIGH.to_string()),
             ..Default::default()
         }),
         Keycode::KC_KB_VOLUME_DOWN => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_LOW.to_string()),
             ..Default::default()
         }),
         Keycode::KC_LOCKING_CAPS_LOCK => Some(LayoutKey {
@@ -691,31 +677,24 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::KC_AUDIO_MUTE => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_X.to_string()),
             ..Default::default()
         }),
         Keycode::KC_AUDIO_VOL_UP => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_HIGH.to_string()),
             ..Default::default()
         }),
         Keycode::KC_AUDIO_VOL_DOWN => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_LOW.to_string()),
             ..Default::default()
         }),
         Keycode::KC_MEDIA_NEXT_TRACK => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SKIP_FORWARD.to_string()),
             ..Default::default()
         }),
         Keycode::KC_MEDIA_PREV_TRACK => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SKIP_BACK.to_string()),
             ..Default::default()
         }),
         Keycode::KC_MEDIA_STOP => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::STOP.to_string()),
             ..Default::default()
         }),
         Keycode::KC_MEDIA_PLAY_PAUSE => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::PLAY_PAUSE.to_string()),
             ..Default::default()
         }),
         Keycode::KC_MEDIA_SELECT => Some(LayoutKey {
@@ -767,19 +746,15 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::KC_MEDIA_FAST_FORWARD => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::FAST_FORWARD.to_string()),
             ..Default::default()
         }),
         Keycode::KC_MEDIA_REWIND => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::REWIND.to_string()),
             ..Default::default()
         }),
         Keycode::KC_BRIGHTNESS_UP => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SUN.to_string()),
             ..Default::default()
         }),
         Keycode::KC_BRIGHTNESS_DOWN => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SUN_DIM.to_string()),
             ..Default::default()
         }),
         Keycode::KC_CONTROL_PANEL => Some(LayoutKey {
@@ -881,7 +856,6 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_LEFT_SHIFT => Some(LayoutKey {
             tap: Label::new("Shift"),
-            symbol: Some(egui_phosphor::regular::ARROW_FAT_UP.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -892,7 +866,6 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_LEFT_GUI => Some(LayoutKey {
             tap: Label::new("Win"),
-            symbol: Some(egui_phosphor::regular::WINDOWS_LOGO.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -903,7 +876,6 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_RIGHT_SHIFT => Some(LayoutKey {
             tap: Label::new("Shift"),
-            symbol: Some(egui_phosphor::regular::ARROW_FAT_UP.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -914,7 +886,6 @@ pub fn get_basic_layout_key(keycode_bytes: u16) -> Option<LayoutKey> {
         }),
         Keycode::KC_RIGHT_GUI => Some(LayoutKey {
             tap: Label::new("Win"),
-            symbol: Some(egui_phosphor::regular::WINDOWS_LOGO.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),

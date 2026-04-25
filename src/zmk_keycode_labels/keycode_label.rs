@@ -173,7 +173,6 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::RETURN => Some(LayoutKey {
             tap: Label::new("Enter"),
-            symbol: Some(egui_phosphor::regular::ARROW_ELBOW_DOWN_LEFT.to_string()),
             kind: KeycodeKind::Special,
             ..Default::default()
         }),
@@ -184,13 +183,11 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::BACKSPACE => Some(LayoutKey {
             tap: Label::new("Backspace"),
-            symbol: Some(egui_phosphor::regular::BACKSPACE.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
         Keycode::TAB => Some(LayoutKey {
             tap: Label::new("Tab"),
-            symbol: Some(egui_phosphor::regular::ARROWS_LEFT_RIGHT.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -248,7 +245,6 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::CAPSLOCK => Some(LayoutKey {
             tap: Label::with_short("Capslock", "Caps"),
-            symbol: Some(egui_phosphor::regular::ARROW_FAT_LINE_UP.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -338,25 +334,21 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::RIGHT_ARROW => Some(LayoutKey {
             tap: Label::default(),
-            symbol: Some(egui_phosphor::regular::ARROW_RIGHT.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
         Keycode::LEFT_ARROW => Some(LayoutKey {
             tap: Label::default(),
-            symbol: Some(egui_phosphor::regular::ARROW_LEFT.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
         Keycode::DOWN_ARROW => Some(LayoutKey {
             tap: Label::default(),
-            symbol: Some(egui_phosphor::regular::ARROW_DOWN.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
         Keycode::UP_ARROW => Some(LayoutKey {
             tap: Label::default(),
-            symbol: Some(egui_phosphor::regular::ARROW_UP.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -382,7 +374,6 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::KP_ENTER => Some(LayoutKey {
             tap: Label::new("Enter"),
-            symbol: Some(egui_phosphor::regular::ARROW_ELBOW_DOWN_LEFT.to_string()),
             ..Default::default()
         }),
         Keycode::KP_NUMBER_1 => Some(LayoutKey {
@@ -455,12 +446,10 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::K_CONTEXT_MENU => Some(LayoutKey {
             tap: Label::new("Menu"),
-            symbol: Some(egui_phosphor::regular::LIST.to_string()),
             ..Default::default()
         }),
         Keycode::K_POWER => Some(LayoutKey {
             tap: Label::new("Power"),
-            symbol: Some(egui_phosphor::regular::POWER.to_string()),
             ..Default::default()
         }),
         Keycode::F13 => Some(LayoutKey {
@@ -556,15 +545,12 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::K_MUTE => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_X.to_string()),
             ..Default::default()
         }),
         Keycode::K_VOLUME_UP => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_HIGH.to_string()),
             ..Default::default()
         }),
         Keycode::K_VOLUME_DOWN => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_LOW.to_string()),
             ..Default::default()
         }),
         Keycode::LOCKING_CAPS => Some(LayoutKey {
@@ -706,7 +692,6 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::LEFT_SHIFT => Some(LayoutKey {
             tap: Label::new("Shift"),
-            symbol: Some(egui_phosphor::regular::ARROW_FAT_UP.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -717,7 +702,6 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::LEFT_COMMAND => Some(LayoutKey {
             tap: Label::new("Win"),
-            symbol: Some(egui_phosphor::regular::WINDOWS_LOGO.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -728,7 +712,6 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::RIGHT_SHIFT => Some(LayoutKey {
             tap: Label::new("Shift"),
-            symbol: Some(egui_phosphor::regular::ARROW_FAT_UP.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
@@ -739,24 +722,19 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::RIGHT_COMMAND => Some(LayoutKey {
             tap: Label::new("Win"),
-            symbol: Some(egui_phosphor::regular::WINDOWS_LOGO.to_string()),
             kind: KeycodeKind::Modifier,
             ..Default::default()
         }),
         Keycode::K_PLAY_PAUSE => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::PLAY_PAUSE.to_string()),
             ..Default::default()
         }),
         Keycode::K_STOP2 => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::STOP.to_string()),
             ..Default::default()
         }),
         Keycode::K_PREVIOUS => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SKIP_BACK.to_string()),
             ..Default::default()
         }),
         Keycode::K_NEXT => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SKIP_FORWARD.to_string()),
             ..Default::default()
         }),
         Keycode::K_EJECT => Some(LayoutKey {
@@ -764,15 +742,12 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::K_VOLUME_UP2 => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_HIGH.to_string()),
             ..Default::default()
         }),
         Keycode::K_VOLUME_DOWN2 => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_LOW.to_string()),
             ..Default::default()
         }),
         Keycode::K_MUTE2 => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_X.to_string()),
             ..Default::default()
         }),
         Keycode::K_WWW => Some(LayoutKey {
@@ -1096,23 +1071,18 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::C_FAST_FORWARD => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::FAST_FORWARD.to_string()),
             ..Default::default()
         }),
         Keycode::C_REWIND => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::REWIND.to_string()),
             ..Default::default()
         }),
         Keycode::C_NEXT => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SKIP_FORWARD.to_string()),
             ..Default::default()
         }),
         Keycode::C_PREVIOUS => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SKIP_BACK.to_string()),
             ..Default::default()
         }),
         Keycode::C_STOP => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::STOP.to_string()),
             ..Default::default()
         }),
         Keycode::C_EJECT => Some(LayoutKey {
@@ -1121,12 +1091,10 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::C_RANDOM_PLAY => Some(LayoutKey {
             tap: Label::with_short("Shuffle", "Shfl"),
-            symbol: Some(egui_phosphor::regular::SHUFFLE.to_string()),
             ..Default::default()
         }),
         Keycode::C_REPEAT => Some(LayoutKey {
             tap: Label::with_short("Repeat", "Rpt"),
-            symbol: Some(egui_phosphor::regular::REPEAT.to_string()),
             ..Default::default()
         }),
         Keycode::C_SLOW_TRACKING => Some(LayoutKey {
@@ -1138,16 +1106,13 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::C_PLAY_PAUSE => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::PLAY_PAUSE.to_string()),
             ..Default::default()
         }),
         Keycode::C_VOICE_COMMAND => Some(LayoutKey {
             tap: Label::with_short("Voice Command", "Voice"),
-            symbol: Some(egui_phosphor::regular::MICROPHONE.to_string()),
             ..Default::default()
         }),
         Keycode::C_MUTE => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_X.to_string()),
             ..Default::default()
         }),
         Keycode::C_BASS_BOOST => Some(LayoutKey {
@@ -1155,11 +1120,9 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::C_VOLUME_UP => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_HIGH.to_string()),
             ..Default::default()
         }),
         Keycode::C_VOLUME_DOWN => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SPEAKER_LOW.to_string()),
             ..Default::default()
         }),
         Keycode::C_SLOW => Some(LayoutKey {
@@ -1263,11 +1226,9 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
             ..Default::default()
         }),
         Keycode::C_BRIGHTNESS_INC => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SUN.to_string()),
             ..Default::default()
         }),
         Keycode::C_BRIGHTNESS_DEC => Some(LayoutKey {
-            symbol: Some(egui_phosphor::regular::SUN_DIM.to_string()),
             ..Default::default()
         }),
         Keycode::C_BRIGHTNESS_MINIMUM => Some(LayoutKey {
@@ -1532,7 +1493,6 @@ fn keycode_label(keycode: &Keycode) -> Option<LayoutKey> {
         }),
         Keycode::C_AC_NEXT_KEYBOARD_LAYOUT_SELECT => Some(LayoutKey {
             tap: Label::new("Globe"),
-            symbol: Some(egui_phosphor::regular::GLOBE.to_string()),
             ..Default::default()
         }),
     }

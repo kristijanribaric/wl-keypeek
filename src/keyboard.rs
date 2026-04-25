@@ -104,6 +104,10 @@ impl Keyboard {
                 if needs_repaint {
                     ui_wake.request_repaint();
                 }
+            } else {
+                // When the transport hiccups (disconnect/reconnect), keep retrying without
+                // pegging a CPU core.
+                thread::sleep(Duration::from_millis(150));
             }
         });
 

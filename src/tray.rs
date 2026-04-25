@@ -1,44 +1,108 @@
-use image::load_from_memory;
-use std::process;
-use std::thread;
-use tray_icon::{menu::Menu, menu::MenuEvent, menu::MenuItem, Icon, TrayIcon, TrayIconBuilder};
+use image::GenericImageView;
+use ksni::blocking::TrayMethods;
+use ksni::menu::StandardItem;
+use std::sync::LazyLock;
+use std::sync::mpsc::Sender;
 
-#[cfg(target_os = "linux")]
-use gtk;
-
-fn create_icon() -> Icon {
-    const ICON_BYTES: &[u8] = include_bytes!("../resources/icon.ico");
-
-    let icon = load_from_memory(ICON_BYTES)
-        .expect("Failed to load icon.")
-        .into_rgba8();
-
-    let (width, height) = icon.dimensions();
-    Icon::from_rgba(icon.into_raw(), width, height).expect("Failed to create icon.")
+#[derive(Clone, Debug)]
+pub enum TrayEvent {
+    ToggleVisibility,
+    Quit,
 }
 
-pub fn create_tray_icon() -> TrayIcon {
-    #[cfg(target_os = "linux")]
-    gtk::init().expect("Failed to initialize GTK. Is a display available?");
+struct KeyPeekTray {
+    sender: Sender<TrayEvent>,
+    force_visible: bool,
+}
 
-    let quit = MenuItem::new("Quit", true, None);
-    let menu = Menu::new();
-    menu.append(&quit).expect("Failed to append menu item.");
+static TRAY_ICON: LazyLock<Option<ksni::Icon>> = LazyLock::new(|| {
+    let png = include_bytes!("../resources/icon.png");
+    let image = image::load_from_memory_with_format(png, image::ImageFormat::Png)
+        .map_err(|err| {
+            eprintln!("Failed to decode tray icon PNG: {err}");
+            err
+        })
+        .ok()?;
 
-    let icon = create_icon();
+    let (width, height) = image.dimensions();
+    let mut data = image.into_rgba8().into_vec();
+    for pixel in data.chunks_exact_mut(4) {
+        // StatusNotifier expects ARGB, while decoded PNG pixels are RGBA.
+        pixel.rotate_right(1);
+    }
 
-    let tray_icon = TrayIconBuilder::new()
-        .with_menu(Box::new(menu))
-        .with_icon(icon)
-        .with_tooltip("KeyPeek")
-        .build()
-        .unwrap();
+    Some(ksni::Icon {
+        width: width as i32,
+        height: height as i32,
+        data,
+    })
+});
 
-    thread::spawn(move || {
-        if MenuEvent::receiver().recv().is_ok() {
-            process::exit(0);
-        }
-    });
+impl ksni::Tray for KeyPeekTray {
+    fn id(&self) -> String {
+        "keypeek-wayland".into()
+    }
 
-    tray_icon
+    fn title(&self) -> String {
+        "KeyPeek".into()
+    }
+
+    fn icon_name(&self) -> String {
+        String::new()
+    }
+
+    fn icon_pixmap(&self) -> Vec<ksni::Icon> {
+        TRAY_ICON.iter().cloned().collect()
+    }
+
+    fn menu(&self) -> Vec<ksni::MenuItem<Self>> {
+        let toggle_label = if self.force_visible {
+            "Hide"
+        } else {
+            "Show"
+        };
+
+        vec![
+            StandardItem {
+                label: toggle_label.into(),
+                activate: Box::new(|tray: &mut Self| {
+                    tray.force_visible = !tray.force_visible;
+                    let _ = tray.sender.send(TrayEvent::ToggleVisibility);
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: "Quit".into(),
+                icon_name: "application-exit".into(),
+                activate: Box::new(|tray: &mut Self| {
+                    let _ = tray.sender.send(TrayEvent::Quit);
+                }),
+                ..Default::default()
+            }
+            .into(),
+        ]
+    }
+}
+
+pub fn init_tray_service(sender: Sender<TrayEvent>) -> Result<(), Box<dyn std::error::Error>> {
+    std::thread::Builder::new()
+        .name("keypeek-tray".to_string())
+        .spawn(move || {
+            let tray = KeyPeekTray {
+                sender,
+                force_visible: false,
+            };
+
+            match tray.spawn() {
+                Ok(_handle) => loop {
+                    std::thread::park();
+                },
+                Err(err) => {
+                    eprintln!("Failed to register tray item: {err}");
+                }
+            }
+        })?;
+
+    Ok(())
 }
