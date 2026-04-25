@@ -4,8 +4,6 @@
 
 This project is a **Wayland-focused adaptation of [the original KeyPeek project](https://github.com/srwi/keypeek)**, built around GTK4 and `gtk4-layer-shell`. It keeps the original idea while adding a Wayland-native overlay flow, tray controls, persistent positioning, scaling controls, and related UX improvements.
 
-<img src=".github/assets/demo.gif" alt="KeyPeek in action">
-
 ## Setup
 
 KeyPeek requires a small firmware module because stock QMK/Vial/ZMK firmware does not expose live layer-change events.
@@ -111,9 +109,6 @@ Once the app is running (via systemd service or manual start), it automatically:
 
 The overlay is transparent, draggable, repositionable with scroll, and can also be moved from the tray menu. Keyboard detection runs in the background, so the overlay stays in sync even if the app loses focus.
 
-For **QMK/Vial keyboards**, you will need to provide layout information (see Setup section above). ZMK keyboards handle this automatically over the protocol.
-
-<img src=".github/assets/settings_window.png" alt="Settings window screenshot" width="60%">
 
 ## Installation & Running (Wayland)
 
