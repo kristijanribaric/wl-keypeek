@@ -2,7 +2,7 @@
 
 **wl-KeyPeek** is a Wayland-native GTK4 overlay that displays a live on-screen keyboard, mirroring your active base and momentary layers in real time. It's especially useful when learning complex multi-layer layouts or using boards with missing legends. The overlay updates instantly as you switch layers, keeping the view always in sync with your firmware state.
 
-This is a modern rewrite of [the original KeyPeek project](https://github.com/srwi/keypeek) optimized for Wayland compositors with GTK4 and `gtk4-layer-shell`. It supports QMK, Vial, and ZMK keyboards and auto-discovers devices on startup.
+This project is a **Wayland-focused adaptation of [the original KeyPeek project](https://github.com/srwi/keypeek)**, built around GTK4 and `gtk4-layer-shell`. It keeps the original idea while adding a Wayland-native overlay flow, tray controls, persistent positioning, scaling controls, and related UX improvements.
 
 <img src=".github/assets/demo.gif" alt="KeyPeek in action">
 
@@ -14,15 +14,15 @@ The module adds that event stream over the device connection, so the overlay sta
 ### QMK and Vial
 
 1. In your QMK userspace (or `qmk_firmware`) root, add the module repo:
-   
+
    ```sh
    mkdir -p modules
    git submodule add https://github.com/srwi/qmk-modules.git modules/srwi
    git submodule update --init --recursive
    ```
-   
+
 2. In your keymap folder, add `srwi/keypeek_layer_notify` to `keymap.json`:
-   
+
    ```json
    {
      "modules": [
@@ -30,26 +30,26 @@ The module adds that event stream over the device connection, so the overlay sta
      ]
    }
    ```
-   
+
 3. In the same keymap folder, enable RAW HID and VIA in `rules.mk`:
-   
+
    ```make
    RAW_ENABLE = yes
    VIA_ENABLE = yes
    ```
-   
+
 4. Build and flash your firmware:
-   
+
    ```sh
    qmk compile -kb <your_keyboard> -km <your_keymap>
    ```
-   
+
 5. **QMK only:** Export layout information to `keyboard_info.json`:
-   
+
    ```sh
    qmk info -kb <your_keyboard> -m -f json > keyboard_info.json
    ```
-   
+
    This last step is only required for QMK keyboards, because VIA does not provide physical layout data directly over the connection. Vial keyboards do not require this step, as the layout data is transmitted when connecting the keyboard to KeyPeek.
 
 ### ZMK
@@ -79,22 +79,22 @@ The module adds that event stream over the device connection, so the overlay sta
    ```
 
 2. Add the `raw_hid_adapter` as an additional shield to your build, e.g. in `build.yaml`:
-   
+
    ```yaml
    include:
      - board: nice_nano_v2
        shield: <existing shields> raw_hid_adapter # <-- required for Raw HID support
        snippet: studio-rpc-usb-uart # <-- required for ZMK Studio support
    ```
-   
+
    **Note:** If you are using a split keyboard, the change above is only required for the central half.
 
 3. Enable ZMK Studio support in your `.conf` file:
-   
+
    ```conf
    CONFIG_ZMK_STUDIO=y
    ```
-   
+
    If your keyboard does not support ZMK Studio yet, adding support is described in the [ZMK documentation](https://zmk.dev/docs/features/studio#adding-zmk-studio-support-to-a-keyboard).
 
 KeyPeek will read layout and keymap directly from the device for ZMK without requiring additional configuration.
@@ -107,9 +107,9 @@ KeyPeek will read layout and keymap directly from the device for ZMK without req
 Once the app is running (via systemd service or manual start), it automatically:
 - **Discovers ZMK devices** on startup with full layout and keymap information
 - **Hides the overlay** until you press a non-base layer key (stays hidden on base layer)
-- **Shows/hides via tray icon** — click the tray icon to toggle visibility or quit
+- **Can be controlled from the tray menu** — show/hide the overlay, enable/disable it entirely, change scale, move it, reset its position, and toggle delayed closing when returning to the default layer
 
-The overlay is transparent, click-through, and positioned to not interfere with your keyboard or monitor. Keyboard detection runs in the background, so the overlay stays in sync even if the app loses focus.
+The overlay is transparent, draggable, repositionable with scroll, and can also be moved from the tray menu. Keyboard detection runs in the background, so the overlay stays in sync even if the app loses focus.
 
 For **QMK/Vial keyboards**, you will need to provide layout information (see Setup section above). ZMK keyboards handle this automatically over the protocol.
 
@@ -134,6 +134,19 @@ Run it directly:
 ```
 
 Or install to your local bin and run via systemd service (see below).
+
+### Tray Controls
+
+The tray menu provides quick access to the Wayland-specific controls added in this variant:
+
+- **Show / Hide** the overlay manually
+- **Enable / Disable Overlay** without quitting the app
+- **Enable / Disable Delayed Close** when returning to the default layer
+- **Scale - / Scale +** to make the overlay smaller or larger
+- **Position controls** for fine adjustments
+- **Reset Position** to move the overlay back to the top-left corner
+
+Position, scale, overlay enabled state, and delayed-close preference are persisted between launches.
 
 ### Install as Systemd User Service
 
@@ -165,6 +178,12 @@ sudo udevadm trigger
 
 Then reconnect your keyboard or restart the service.
 
-# License & Attribution
+## Attribution
 
-Parts of this project are based on code from [the VIA project](https://github.com/the-via/app), which is licensed under the GNU General Public License v3.0.
+- This project is based on and inspired by [the original KeyPeek project](https://github.com/srwi/keypeek).
+- Parts of this project are also based on code from [the VIA project](https://github.com/the-via/app).
+ 
+
+## License
+
+This repository is licensed under **GPL-3.0-only**. See [`LICENSE`](LICENSE) for details.
