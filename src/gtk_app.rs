@@ -1,7 +1,7 @@
 //! GTK4 application with wlr-layer-shell support for Wayland compositors.
 //! This module handles the main window, overlay layer, and drawing setup.
 
-use crate::settings::{Settings, WindowPosition};
+use crate::settings::Settings;
 use gtk4::gdk;
 use gtk4::prelude::*;
 use gtk4::{Application, ApplicationWindow, CssProvider, DrawingArea, EventControllerMotion, EventControllerScroll, EventControllerScrollFlags, GestureClick};
@@ -120,7 +120,7 @@ fn setup_drag_reposition(drawing_area: &DrawingArea, window: &ApplicationWindow,
     let window_motion = window.clone();
 
     motion_controller.connect_motion(move |_controller, x, y| {
-        let mut state = drag_state_motion.borrow_mut();
+        let state = drag_state_motion.borrow_mut();
         if state.dragging {
             let delta_x = (x - state.start_x) as i32;
             let delta_y = (y - state.start_y) as i32;

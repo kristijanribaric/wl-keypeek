@@ -48,11 +48,11 @@ fn main() {
     let (ui_tx, ui_rx) = mpsc::channel::<UiEvent>();
     let (tray_tx, tray_rx) = mpsc::channel::<TrayEvent>();
 
-    if let Err(err) = tray::init_tray_service(tray_tx) {
+    if let Err(err) = tray::init_tray_service(tray_tx, settings.overlay_enabled) {
         eprintln!("Failed to start tray service: {err}");
     }
 
-    let settings = Rc::new(settings);
+    let settings = Rc::new(RefCell::new(settings));
     let started = Rc::new(Cell::new(false));
     let ui_rx_slot = Rc::new(RefCell::new(Some(ui_rx)));
     let tray_rx_slot = Rc::new(RefCell::new(Some(tray_rx)));
@@ -62,22 +62,50 @@ fn main() {
             return;
         }
 
-        let settings = settings.as_ref().clone();
-        let gtk = GtkApp::new(app, &settings);
+        let settings_snapshot = {
+            let s = settings.borrow();
+            s.clone()
+        };
+
+        let gtk = GtkApp::new(app, &settings_snapshot);
         let window = gtk.window.clone();
         let drawing_area = gtk.drawing_area.clone();
 
+        // Apply saved position offsets
+        // On first run, offset_x/offset_y are 0 (default), so initialize from margin
+        let initial_x = if settings_snapshot.offset_x > 0 {
+            settings_snapshot.offset_x
+        } else {
+            settings_snapshot.margin as i32
+        };
+        let initial_y = if settings_snapshot.offset_y > 0 {
+            settings_snapshot.offset_y
+        } else {
+            settings_snapshot.margin as i32
+        };
+        window.set_margin(gtk4_layer_shell::Edge::Left, initial_x);
+        window.set_margin(gtk4_layer_shell::Edge::Top, initial_y);
+
+        // Update settings to reflect initial position
+        {
+            let mut s = settings.borrow_mut();
+            s.offset_x = initial_x;
+            s.offset_y = initial_y;
+        }
+
         let keyboard: Arc<Mutex<Option<Keyboard>>> = Arc::new(Mutex::new(None));
         let keyboard_for_draw = Arc::clone(&keyboard);
-        let renderer = CairoRenderer::new(
-            settings.size as f32,
-            settings.font_size_multiplier,
-            settings.theme.clone(),
-        );
+        let settings_for_draw = settings.clone();
 
         drawing_area.set_draw_func(move |_, cr, width, height| {
             let keyboard_guard = keyboard_for_draw.lock().unwrap();
             if let Some(active_keyboard) = keyboard_guard.as_ref() {
+                let settings_ref = settings_for_draw.borrow();
+                let renderer = CairoRenderer::new(
+                    settings_ref.size as f32,
+                    settings_ref.font_size_multiplier,
+                    settings_ref.theme.clone(),
+                );
                 renderer.render_keyboard(cr, active_keyboard, width, height);
             }
         });
@@ -103,6 +131,9 @@ fn main() {
         let ui_rx = Rc::new(RefCell::new(ui_rx));
         let tray_rx = Rc::new(RefCell::new(tray_rx));
 
+        // Track position to detect drag/scroll changes
+        let last_pos = Rc::new(RefCell::new((initial_x, initial_y)));
+
         {
             let keyboard = Arc::clone(&keyboard);
             let drawing_area = drawing_area.clone();
@@ -112,28 +143,59 @@ fn main() {
             let app = app.clone();
             let ui_rx = ui_rx.clone();
             let tray_rx = tray_rx.clone();
+            let last_pos = last_pos.clone();
 
             glib::timeout_add_local(Duration::from_millis(16), move || {
+                let settings_ref = settings.borrow();
                 process_ui_events(
                     &ui_rx.borrow(),
                     &window,
                     &keyboard,
                     &drawing_area,
-                    &settings,
+                    &settings_ref,
                     &force_visible,
                 );
+                drop(settings_ref); // Release borrow
 
-                if process_tray_events(&tray_rx.borrow(), &window, &force_visible, &app) {
-                    update_overlay_visibility(&window, &keyboard, force_visible.get());
+                if process_tray_events(
+                    &tray_rx.borrow(),
+                    &window,
+                    &keyboard,
+                    &force_visible,
+                    &drawing_area,
+                    &app,
+                    &settings,
+                ) {
+                    let overlay_enabled = settings.borrow().overlay_enabled;
+                    update_overlay_visibility(
+                        &window,
+                        &keyboard,
+                        force_visible.get(),
+                        overlay_enabled,
+                    );
                     drawing_area.queue_draw();
                 }
 
-                update_overlay_visibility(&window, &keyboard, force_visible.get());
+                // Check if position changed (from drag/scroll) and persist it
+                let current_x = window.margin(gtk4_layer_shell::Edge::Left);
+                let current_y = window.margin(gtk4_layer_shell::Edge::Top);
+                let mut last = last_pos.borrow_mut();
+                if last.0 != current_x || last.1 != current_y {
+                    last.0 = current_x;
+                    last.1 = current_y;
+                    let mut settings_ref = settings.borrow_mut();
+                    settings_ref.offset_x = current_x;
+                    settings_ref.offset_y = current_y;
+                    let _ = settings_ref.save();
+                }
+
+                let overlay_enabled = settings.borrow().overlay_enabled;
+                update_overlay_visibility(&window, &keyboard, force_visible.get(), overlay_enabled);
                 ControlFlow::Continue
             });
         }
 
-        start_connection_thread(settings.timeout, ui_wake, ui_tx.clone());
+        start_connection_thread(settings.borrow().timeout, ui_wake, ui_tx.clone());
     });
 
     app.run();
@@ -151,7 +213,12 @@ fn process_ui_events(
         match ui_rx.try_recv() {
             Ok(event) => match event {
                 UiEvent::KeyboardStateChanged => {
-                    update_overlay_visibility(window, keyboard, force_visible.get());
+                    update_overlay_visibility(
+                        window,
+                        keyboard,
+                        force_visible.get(),
+                        settings.overlay_enabled,
+                    );
                     drawing_area.queue_draw();
                 }
                 UiEvent::Connected(new_keyboard) => {
@@ -160,7 +227,12 @@ fn process_ui_events(
                         *keyboard_guard = Some(new_keyboard);
                     }
                     resize_window_for_layout(window, keyboard, settings);
-                    update_overlay_visibility(window, keyboard, force_visible.get());
+                    update_overlay_visibility(
+                        window,
+                        keyboard,
+                        force_visible.get(),
+                        settings.overlay_enabled,
+                    );
                     drawing_area.queue_draw();
                 }
                 UiEvent::ConnectError(err) => {
@@ -176,31 +248,69 @@ fn process_ui_events(
 fn process_tray_events(
     tray_rx: &Receiver<TrayEvent>,
     window: &gtk4::ApplicationWindow,
+    keyboard: &Arc<Mutex<Option<Keyboard>>>,
     force_visible: &Cell<bool>,
+    drawing_area: &gtk4::DrawingArea,
     app: &gtk4::Application,
+    settings: &Rc<RefCell<Settings>>,
 ) -> bool {
-    let mut changed_visibility = false;
+    let mut needs_refresh = false;
 
     loop {
         match tray_rx.try_recv() {
             Ok(event) => match event {
                 TrayEvent::ToggleVisibility => {
-                    force_visible.set(!force_visible.get());
-                    changed_visibility = true;
+                    if settings.borrow().overlay_enabled {
+                        force_visible.set(!force_visible.get());
+                        needs_refresh = true;
+                    }
+                }
+                TrayEvent::ToggleEnabled => {
+                    let mut settings_ref = settings.borrow_mut();
+                    settings_ref.overlay_enabled = !settings_ref.overlay_enabled;
+                    if !settings_ref.overlay_enabled {
+                        force_visible.set(false);
+                    }
+                    let _ = settings_ref.save();
+                    needs_refresh = true;
+                }
+                TrayEvent::AdjustScale(delta) => {
+                    let mut settings_ref = settings.borrow_mut();
+                    let new_size = clamp_overlay_size(settings_ref.size + delta);
+                    if new_size != settings_ref.size {
+                        settings_ref.size = new_size;
+                        let _ = settings_ref.save();
+                        resize_window_for_layout(window, keyboard, &settings_ref);
+                        drawing_area.queue_draw();
+                        needs_refresh = true;
+                    }
                 }
                 TrayEvent::AdjustX(delta) => {
                     let current = window.margin(gtk4_layer_shell::Edge::Left);
                     let new_x = (current + delta).max(0);
                     window.set_margin(gtk4_layer_shell::Edge::Left, new_x);
+                    // Update and persist settings
+                    let mut settings_ref = settings.borrow_mut();
+                    settings_ref.offset_x = new_x;
+                    let _ = settings_ref.save();
                 }
                 TrayEvent::AdjustY(delta) => {
                     let current = window.margin(gtk4_layer_shell::Edge::Top);
                     let new_y = (current + delta).max(0);
                     window.set_margin(gtk4_layer_shell::Edge::Top, new_y);
+                    // Update and persist settings
+                    let mut settings_ref = settings.borrow_mut();
+                    settings_ref.offset_y = new_y;
+                    let _ = settings_ref.save();
                 }
                 TrayEvent::ResetPosition => {
                     window.set_margin(gtk4_layer_shell::Edge::Left, 0);
                     window.set_margin(gtk4_layer_shell::Edge::Top, 0);
+                    // Update and persist settings
+                    let mut settings_ref = settings.borrow_mut();
+                    settings_ref.offset_x = 0;
+                    settings_ref.offset_y = 0;
+                    let _ = settings_ref.save();
                 }
                 TrayEvent::Quit => app.quit(),
             },
@@ -209,7 +319,7 @@ fn process_tray_events(
         }
     }
 
-    changed_visibility
+    needs_refresh
 }
 
 fn start_connection_thread(timeout: i64, ui_wake: UiWake, ui_tx: Sender<UiEvent>) {
@@ -301,12 +411,19 @@ fn resize_window_for_layout(
     window.set_default_size(width.max(32), height.max(32));
 }
 
+fn clamp_overlay_size(size: i32) -> i32 {
+    size.clamp(20, 1000)
+}
+
 fn update_overlay_visibility(
     window: &gtk4::ApplicationWindow,
     keyboard: &Arc<Mutex<Option<Keyboard>>>,
     force_visible: bool,
+    overlay_enabled: bool,
 ) {
-    let should_show = if force_visible {
+    let should_show = if !overlay_enabled {
+        false
+    } else if force_visible {
         true
     } else {
         let keyboard_guard = keyboard.lock().unwrap();

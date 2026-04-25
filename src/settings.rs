@@ -168,9 +168,12 @@ pub struct Settings {
     pub size: i32,
     pub font_size_multiplier: f32,
     pub auto_fit_before_ellipsis: bool,
+    pub overlay_enabled: bool,
     pub position: WindowPosition,
     pub timeout: i64,
     pub margin: u32,
+    pub offset_x: i32,
+    pub offset_y: i32,
     pub theme: ThemeSettings,
 }
 
@@ -180,9 +183,12 @@ impl Default for Settings {
             size: 60,
             font_size_multiplier: 1.0,
             auto_fit_before_ellipsis: false,
+            overlay_enabled: true,
             position: WindowPosition::BottomRight,
             timeout: 2000,
             margin: 10,
+            offset_x: 0,
+            offset_y: 0,
             theme: ThemeSettings::default(),
         }
     }
@@ -236,9 +242,12 @@ impl Settings {
             "auto_fit_before_ellipsis",
             self.auto_fit_before_ellipsis.to_string(),
         );
+        section.set("overlay_enabled", self.overlay_enabled.to_string());
         section.set("position", self.position.to_string());
         section.set("timeout", self.timeout.to_string());
         section.set("margin", self.margin.to_string());
+        section.set("offset_x", self.offset_x.to_string());
+        section.set("offset_y", self.offset_y.to_string());
         for (index, color) in self.theme.layer_colors.iter().enumerate() {
             section.set(format!("layer_color_{index}"), color.to_string());
         }
@@ -260,6 +269,9 @@ impl Settings {
         if let Some(val) = section.get("auto_fit_before_ellipsis") {
             s.auto_fit_before_ellipsis = val.parse().unwrap_or(s.auto_fit_before_ellipsis);
         }
+        if let Some(val) = section.get("overlay_enabled") {
+            s.overlay_enabled = val.parse().unwrap_or(s.overlay_enabled);
+        }
         if let Some(val) = section.get("position") {
             if let Ok(parsed) = val.parse() {
                 s.position = parsed;
@@ -275,6 +287,12 @@ impl Settings {
         }
         if let Some(val) = section.get("margin") {
             s.margin = val.parse().unwrap_or(s.margin);
+        }
+        if let Some(val) = section.get("offset_x") {
+            s.offset_x = val.parse().unwrap_or(s.offset_x);
+        }
+        if let Some(val) = section.get("offset_y") {
+            s.offset_y = val.parse().unwrap_or(s.offset_y);
         }
         for index in 0..s.theme.layer_colors.len() {
             if let Some(val) = section.get(&format!("layer_color_{index}")) {

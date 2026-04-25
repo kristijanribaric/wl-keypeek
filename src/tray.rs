@@ -9,6 +9,8 @@ pub enum TrayEvent {
     ToggleVisibility,
     AdjustX(i32),  // adjust by this delta
     AdjustY(i32),  // adjust by this delta
+    AdjustScale(i32),
+    ToggleEnabled,
     ResetPosition,
     Quit,
 }
@@ -16,6 +18,7 @@ pub enum TrayEvent {
 struct KeyPeekTray {
     sender: Sender<TrayEvent>,
     force_visible: bool,
+    overlay_enabled: bool,
 }
 
 static TRAY_ICON: LazyLock<Option<ksni::Icon>> = LazyLock::new(|| {
@@ -64,13 +67,48 @@ impl ksni::Tray for KeyPeekTray {
         } else {
             "Show"
         };
+        let enabled_label = if self.overlay_enabled {
+            "Disable Overlay"
+        } else {
+            "Enable Overlay"
+        };
 
         vec![
             StandardItem {
                 label: toggle_label.into(),
                 activate: Box::new(|tray: &mut Self| {
-                    tray.force_visible = !tray.force_visible;
-                    let _ = tray.sender.send(TrayEvent::ToggleVisibility);
+                    if tray.overlay_enabled {
+                        tray.force_visible = !tray.force_visible;
+                        let _ = tray.sender.send(TrayEvent::ToggleVisibility);
+                    }
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: enabled_label.into(),
+                activate: Box::new(|tray: &mut Self| {
+                    tray.overlay_enabled = !tray.overlay_enabled;
+                    if !tray.overlay_enabled {
+                        tray.force_visible = false;
+                    }
+                    let _ = tray.sender.send(TrayEvent::ToggleEnabled);
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: "Scale -".into(),
+                activate: Box::new(|tray: &mut Self| {
+                    let _ = tray.sender.send(TrayEvent::AdjustScale(-5));
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: "Scale +".into(),
+                activate: Box::new(|tray: &mut Self| {
+                    let _ = tray.sender.send(TrayEvent::AdjustScale(5));
                 }),
                 ..Default::default()
             }
@@ -127,13 +165,17 @@ impl ksni::Tray for KeyPeekTray {
     }
 }
 
-pub fn init_tray_service(sender: Sender<TrayEvent>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn init_tray_service(
+    sender: Sender<TrayEvent>,
+    overlay_enabled: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     std::thread::Builder::new()
         .name("keypeek-tray".to_string())
         .spawn(move || {
             let tray = KeyPeekTray {
                 sender,
                 force_visible: false,
+                overlay_enabled,
             };
 
             match tray.spawn() {
