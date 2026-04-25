@@ -1108,29 +1108,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keypeek"
-version = "0.5.0"
-dependencies = [
- "cairo-rs",
- "dirs",
- "glib",
- "gtk4",
- "gtk4-layer-shell",
- "hidapi",
- "image",
- "ksni",
- "lzma-rs",
- "pango",
- "pangocairo",
- "qmk-via-api",
- "rust-ini",
- "serde",
- "serde_json",
- "serialport",
- "zmk-studio-api",
-]
-
-[[package]]
 name = "khronos_api"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2605,6 +2582,29 @@ name = "wit-bindgen"
 version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
+
+[[package]]
+name = "wl-keypeek"
+version = "0.5.0"
+dependencies = [
+ "cairo-rs",
+ "dirs",
+ "glib",
+ "gtk4",
+ "gtk4-layer-shell",
+ "hidapi",
+ "image",
+ "ksni",
+ "lzma-rs",
+ "pango",
+ "pangocairo",
+ "qmk-via-api",
+ "rust-ini",
+ "serde",
+ "serde_json",
+ "serialport",
+ "zmk-studio-api",
+]
 
 [[package]]
 name = "xml-rs"

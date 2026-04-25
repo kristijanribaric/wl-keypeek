@@ -1,9 +1,9 @@
 [package]
-name = "keypeek"
+name = "wl-keypeek"
 license = "GPL-3.0-only"
-description = "Keyboard layer overlay for VIA, Vial, and ZMK"
-authors = ["Stephan Rumswinkel"]
-repository = "https://github.com/srwi/keypeek"
+description = "Wayland-native GTK4 keyboard layer overlay for ZMK, VIA, and Vial"
+authors = ["Kristijan Ribaric"]
+repository = "https://github.com/kristijanribaric/wl-keypeek"
 readme = "README.md"
 version = "0.5.0"
 edition = "2021"
@@ -30,6 +30,5 @@ ksni = { version = "0.3.4", features = ["blocking"] }
 image = { version = "0.25.6", default-features = false, features = ["png"] }
 
 [package.metadata.bundle]
-name = "KeyPeek"
-identifier = "dev.srwi.keypeek"
-osx_info_plist_exts = ["resources/macos-info-plist-ext.xml"]
+name = "wl-KeyPeek"
+identifier = "wl-keypeek"
