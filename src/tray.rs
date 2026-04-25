@@ -11,6 +11,7 @@ pub enum TrayEvent {
     AdjustY(i32),  // adjust by this delta
     AdjustScale(i32),
     ToggleEnabled,
+    ToggleDelayedClose,
     ResetPosition,
     Quit,
 }
@@ -19,6 +20,7 @@ struct KeyPeekTray {
     sender: Sender<TrayEvent>,
     force_visible: bool,
     overlay_enabled: bool,
+    delay_close_on_default_layer: bool,
 }
 
 static TRAY_ICON: LazyLock<Option<ksni::Icon>> = LazyLock::new(|| {
@@ -72,6 +74,11 @@ impl ksni::Tray for KeyPeekTray {
         } else {
             "Enable Overlay"
         };
+        let delayed_close_label = if self.delay_close_on_default_layer {
+            "Disable Delayed Close"
+        } else {
+            "Enable Delayed Close"
+        };
 
         vec![
             StandardItem {
@@ -93,6 +100,15 @@ impl ksni::Tray for KeyPeekTray {
                         tray.force_visible = false;
                     }
                     let _ = tray.sender.send(TrayEvent::ToggleEnabled);
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: delayed_close_label.into(),
+                activate: Box::new(|tray: &mut Self| {
+                    tray.delay_close_on_default_layer = !tray.delay_close_on_default_layer;
+                    let _ = tray.sender.send(TrayEvent::ToggleDelayedClose);
                 }),
                 ..Default::default()
             }
@@ -168,6 +184,7 @@ impl ksni::Tray for KeyPeekTray {
 pub fn init_tray_service(
     sender: Sender<TrayEvent>,
     overlay_enabled: bool,
+    delay_close_on_default_layer: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     std::thread::Builder::new()
         .name("keypeek-tray".to_string())
@@ -176,6 +193,7 @@ pub fn init_tray_service(
                 sender,
                 force_visible: false,
                 overlay_enabled,
+                delay_close_on_default_layer,
             };
 
             match tray.spawn() {

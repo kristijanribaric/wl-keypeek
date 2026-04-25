@@ -48,7 +48,11 @@ fn main() {
     let (ui_tx, ui_rx) = mpsc::channel::<UiEvent>();
     let (tray_tx, tray_rx) = mpsc::channel::<TrayEvent>();
 
-    if let Err(err) = tray::init_tray_service(tray_tx, settings.overlay_enabled) {
+    if let Err(err) = tray::init_tray_service(
+        tray_tx,
+        settings.overlay_enabled,
+        settings.delay_close_on_default_layer,
+    ) {
         eprintln!("Failed to start tray service: {err}");
     }
 
@@ -195,7 +199,12 @@ fn main() {
             });
         }
 
-        start_connection_thread(settings.borrow().timeout, ui_wake, ui_tx.clone());
+        start_connection_thread(
+            settings.borrow().timeout,
+            settings.borrow().delay_close_on_default_layer,
+            ui_wake,
+            ui_tx.clone(),
+        );
     });
 
     app.run();
@@ -222,6 +231,9 @@ fn process_ui_events(
                     drawing_area.queue_draw();
                 }
                 UiEvent::Connected(new_keyboard) => {
+                    new_keyboard.set_timeout(settings.timeout);
+                    new_keyboard
+                        .set_delay_close_on_default_layer(settings.delay_close_on_default_layer);
                     {
                         let mut keyboard_guard = keyboard.lock().unwrap();
                         *keyboard_guard = Some(new_keyboard);
@@ -274,6 +286,18 @@ fn process_tray_events(
                     let _ = settings_ref.save();
                     needs_refresh = true;
                 }
+                TrayEvent::ToggleDelayedClose => {
+                    let mut settings_ref = settings.borrow_mut();
+                    settings_ref.delay_close_on_default_layer =
+                        !settings_ref.delay_close_on_default_layer;
+                    if let Some(active_keyboard) = keyboard.lock().unwrap().as_ref() {
+                        active_keyboard.set_delay_close_on_default_layer(
+                            settings_ref.delay_close_on_default_layer,
+                        );
+                    }
+                    let _ = settings_ref.save();
+                    needs_refresh = true;
+                }
                 TrayEvent::AdjustScale(delta) => {
                     let mut settings_ref = settings.borrow_mut();
                     let new_size = clamp_overlay_size(settings_ref.size + delta);
@@ -322,7 +346,12 @@ fn process_tray_events(
     needs_refresh
 }
 
-fn start_connection_thread(timeout: i64, ui_wake: UiWake, ui_tx: Sender<UiEvent>) {
+fn start_connection_thread(
+    timeout: i64,
+    delay_close_on_default_layer: bool,
+    ui_wake: UiWake,
+    ui_tx: Sender<UiEvent>,
+) {
     thread::Builder::new()
         .name("keypeek-zmk-connect".to_string())
         .spawn(move || {
@@ -338,6 +367,7 @@ fn start_connection_thread(timeout: i64, ui_wake: UiWake, ui_tx: Sender<UiEvent>
                 let request = ConnectionRequest {
                     spec,
                     timeout,
+                    delay_close_on_default_layer,
                     layout_name: None,
                 };
 

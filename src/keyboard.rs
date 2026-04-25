@@ -14,6 +14,7 @@ pub struct Keyboard {
     layer_state: Arc<Mutex<u32>>,
     default_layer_state: Arc<Mutex<u32>>,
     timeout_ms: Arc<Mutex<i64>>,
+    delay_close_on_default_layer: Arc<Mutex<bool>>,
 }
 
 impl Keyboard {
@@ -21,6 +22,7 @@ impl Keyboard {
         protocol: Box<dyn KeyboardProtocol>,
         layout_name: String,
         timeout: i64,
+        delay_close_on_default_layer: bool,
         ui_wake: UiWake,
     ) -> Result<Self, String> {
         let definition = protocol.get_layout_definition();
@@ -40,6 +42,7 @@ impl Keyboard {
         let default_layer_state = Arc::new(Mutex::new(0));
         let time_to_hide_overlay = Arc::new(Mutex::new(Some(Instant::now())));
         let timeout_ms = Arc::new(Mutex::new(timeout));
+        let delay_close_on_default_layer = Arc::new(Mutex::new(delay_close_on_default_layer));
         let matrix = Arc::new(Mutex::new(matrix));
 
         let keyboard = Keyboard {
@@ -49,12 +52,14 @@ impl Keyboard {
             layer_state: Arc::clone(&layer_state),
             default_layer_state: Arc::clone(&default_layer_state),
             timeout_ms: Arc::clone(&timeout_ms),
+            delay_close_on_default_layer: Arc::clone(&delay_close_on_default_layer),
         };
 
         let layer_state_clone = Arc::clone(&keyboard.layer_state);
         let default_layer_state_clone = Arc::clone(&keyboard.default_layer_state);
         let time_to_hide_clone = Arc::clone(&keyboard.time_to_hide_overlay);
         let timeout_clone = Arc::clone(&keyboard.timeout_ms);
+        let delay_close_clone = Arc::clone(&keyboard.delay_close_on_default_layer);
         let matrix_clone = Arc::clone(&matrix);
 
         thread::spawn(move || loop {
@@ -71,18 +76,14 @@ impl Keyboard {
                     layer_bytes[..size].copy_from_slice(&response[2 + size..2 + 2 * size]);
                     let layer_state = u32::from_le_bytes(layer_bytes);
 
-                    if layer_state > 1 {
-                        *time_to_hide_clone.lock().unwrap() = None;
-                    } else {
-                        let timeout = *timeout_clone.lock().unwrap();
-                        if timeout < 0 {
-                            *time_to_hide_clone.lock().unwrap() = None;
-                        } else {
-                            let time_to_hide =
-                                Instant::now() + Duration::from_millis(timeout as u64);
-                            *time_to_hide_clone.lock().unwrap() = Some(time_to_hide);
-                        }
-                    }
+                    let timeout = *timeout_clone.lock().unwrap();
+                    let delay_close_on_default_layer = *delay_close_clone.lock().unwrap();
+                    Self::update_hide_deadline(
+                        &time_to_hide_clone,
+                        layer_state,
+                        timeout,
+                        delay_close_on_default_layer,
+                    );
 
                     *layer_state_clone.lock().unwrap() = layer_state;
                     *default_layer_state_clone.lock().unwrap() = default_layer_state;
@@ -153,9 +154,43 @@ impl Keyboard {
 
     pub fn set_timeout(&self, timeout: i64) {
         *self.timeout_ms.lock().unwrap() = timeout;
+        let layer_state = *self.layer_state.lock().unwrap();
+        let delay_close_on_default_layer = *self.delay_close_on_default_layer.lock().unwrap();
+        Self::update_hide_deadline(
+            &self.time_to_hide_overlay,
+            layer_state,
+            timeout,
+            delay_close_on_default_layer,
+        );
+    }
+
+    pub fn set_delay_close_on_default_layer(&self, enabled: bool) {
+        *self.delay_close_on_default_layer.lock().unwrap() = enabled;
+        let layer_state = *self.layer_state.lock().unwrap();
+        let timeout = *self.timeout_ms.lock().unwrap();
+        Self::update_hide_deadline(&self.time_to_hide_overlay, layer_state, timeout, enabled);
     }
 
     pub fn set_layout(&mut self, layout: KeyboardLayout) {
         self.layout = layout;
+    }
+
+    fn update_hide_deadline(
+        time_to_hide_overlay: &Arc<Mutex<Option<Instant>>>,
+        layer_state: u32,
+        timeout: i64,
+        delay_close_on_default_layer: bool,
+    ) {
+        let next_deadline = if layer_state > 1 {
+            None
+        } else if !delay_close_on_default_layer {
+            Some(Instant::now())
+        } else if timeout < 0 {
+            None
+        } else {
+            Some(Instant::now() + Duration::from_millis(timeout as u64))
+        };
+
+        *time_to_hide_overlay.lock().unwrap() = next_deadline;
     }
 }

@@ -169,6 +169,7 @@ pub struct Settings {
     pub font_size_multiplier: f32,
     pub auto_fit_before_ellipsis: bool,
     pub overlay_enabled: bool,
+    pub delay_close_on_default_layer: bool,
     pub position: WindowPosition,
     pub timeout: i64,
     pub margin: u32,
@@ -184,6 +185,7 @@ impl Default for Settings {
             font_size_multiplier: 1.0,
             auto_fit_before_ellipsis: false,
             overlay_enabled: true,
+            delay_close_on_default_layer: true,
             position: WindowPosition::BottomRight,
             timeout: 2000,
             margin: 10,
@@ -243,6 +245,10 @@ impl Settings {
             self.auto_fit_before_ellipsis.to_string(),
         );
         section.set("overlay_enabled", self.overlay_enabled.to_string());
+        section.set(
+            "delay_close_on_default_layer",
+            self.delay_close_on_default_layer.to_string(),
+        );
         section.set("position", self.position.to_string());
         section.set("timeout", self.timeout.to_string());
         section.set("margin", self.margin.to_string());
@@ -271,6 +277,9 @@ impl Settings {
         }
         if let Some(val) = section.get("overlay_enabled") {
             s.overlay_enabled = val.parse().unwrap_or(s.overlay_enabled);
+        }
+        if let Some(val) = section.get("delay_close_on_default_layer") {
+            s.delay_close_on_default_layer = val.parse().unwrap_or(s.delay_close_on_default_layer);
         }
         if let Some(val) = section.get("position") {
             if let Ok(parsed) = val.parse() {
