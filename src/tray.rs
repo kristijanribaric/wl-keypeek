@@ -7,6 +7,9 @@ use std::sync::mpsc::Sender;
 #[derive(Clone, Debug)]
 pub enum TrayEvent {
     ToggleVisibility,
+    AdjustX(i32),  // adjust by this delta
+    AdjustY(i32),  // adjust by this delta
+    ResetPosition,
     Quit,
 }
 
@@ -73,8 +76,47 @@ impl ksni::Tray for KeyPeekTray {
             }
             .into(),
             StandardItem {
+                label: "Position ← (X-10)".into(),
+                activate: Box::new(|tray: &mut Self| {
+                    let _ = tray.sender.send(TrayEvent::AdjustX(-10));
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: "Position → (X+10)".into(),
+                activate: Box::new(|tray: &mut Self| {
+                    let _ = tray.sender.send(TrayEvent::AdjustX(10));
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: "Position ↑ (Y-10)".into(),
+                activate: Box::new(|tray: &mut Self| {
+                    let _ = tray.sender.send(TrayEvent::AdjustY(-10));
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: "Position ↓ (Y+10)".into(),
+                activate: Box::new(|tray: &mut Self| {
+                    let _ = tray.sender.send(TrayEvent::AdjustY(10));
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: "Reset Position".into(),
+                activate: Box::new(|tray: &mut Self| {
+                    let _ = tray.sender.send(TrayEvent::ResetPosition);
+                }),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
                 label: "Quit".into(),
-                icon_name: "application-exit".into(),
                 activate: Box::new(|tray: &mut Self| {
                     let _ = tray.sender.send(TrayEvent::Quit);
                 }),

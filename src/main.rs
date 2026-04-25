@@ -25,6 +25,7 @@ use crate::tray::TrayEvent;
 use crate::ui_wake::UiWake;
 use glib::ControlFlow;
 use gtk4::prelude::*;
+use gtk4_layer_shell::LayerShell;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver, Sender, TryRecvError};
@@ -122,7 +123,7 @@ fn main() {
                     &force_visible,
                 );
 
-                if process_tray_events(&tray_rx.borrow(), &force_visible, &app) {
+                if process_tray_events(&tray_rx.borrow(), &window, &force_visible, &app) {
                     update_overlay_visibility(&window, &keyboard, force_visible.get());
                     drawing_area.queue_draw();
                 }
@@ -174,6 +175,7 @@ fn process_ui_events(
 
 fn process_tray_events(
     tray_rx: &Receiver<TrayEvent>,
+    window: &gtk4::ApplicationWindow,
     force_visible: &Cell<bool>,
     app: &gtk4::Application,
 ) -> bool {
@@ -185,6 +187,20 @@ fn process_tray_events(
                 TrayEvent::ToggleVisibility => {
                     force_visible.set(!force_visible.get());
                     changed_visibility = true;
+                }
+                TrayEvent::AdjustX(delta) => {
+                    let current = window.margin(gtk4_layer_shell::Edge::Left);
+                    let new_x = (current + delta).max(0);
+                    window.set_margin(gtk4_layer_shell::Edge::Left, new_x);
+                }
+                TrayEvent::AdjustY(delta) => {
+                    let current = window.margin(gtk4_layer_shell::Edge::Top);
+                    let new_y = (current + delta).max(0);
+                    window.set_margin(gtk4_layer_shell::Edge::Top, new_y);
+                }
+                TrayEvent::ResetPosition => {
+                    window.set_margin(gtk4_layer_shell::Edge::Left, 0);
+                    window.set_margin(gtk4_layer_shell::Edge::Top, 0);
                 }
                 TrayEvent::Quit => app.quit(),
             },
