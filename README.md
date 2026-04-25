@@ -1,6 +1,8 @@
 # wl-KeyPeek <img src="resources/icon.svg" align="right" width="15%"/>
 
-KeyPeek provides a live on-screen overlay of your keyboard, mirroring the active base and momentary layers. It is especially useful when learning complex multi-layer layouts or using boards with missing legends. The overlay updates instantly when layers change, so the view always matches your firmware state. KeyPeek currently supports QMK, Vial, and ZMK keyboards.
+**wl-KeyPeek** is a Wayland-native GTK4 overlay that displays a live on-screen keyboard, mirroring your active base and momentary layers in real time. It's especially useful when learning complex multi-layer layouts or using boards with missing legends. The overlay updates instantly as you switch layers, keeping the view always in sync with your firmware state.
+
+This is a modern rewrite of [the original KeyPeek project](https://github.com/srwi/keypeek) optimized for Wayland compositors with GTK4 and `gtk4-layer-shell`. It supports QMK, Vial, and ZMK keyboards and auto-discovers devices on startup.
 
 <img src=".github/assets/demo.gif" alt="KeyPeek in action">
 
@@ -102,43 +104,66 @@ KeyPeek will read layout and keymap directly from the device for ZMK without req
 
 ## Usage
 
-Devices are scanned when the app starts. For QMK you will be prompted to select the `keyboard_info.json` generated from your keymap when you connect. For Vial and ZMK, just select the connected device from the dropdown, since they provide layout information directly.
+Once the app is running (via systemd service or manual start), it automatically:
+- **Discovers ZMK devices** on startup with full layout and keymap information
+- **Hides the overlay** until you press a non-base layer key (stays hidden on base layer)
+- **Shows/hides via tray icon** — click the tray icon to toggle visibility or quit
+
+The overlay is transparent, click-through, and positioned to not interfere with your keyboard or monitor. Keyboard detection runs in the background, so the overlay stays in sync even if the app loses focus.
+
+For **QMK/Vial keyboards**, you will need to provide layout information (see Setup section above). ZMK keyboards handle this automatically over the protocol.
 
 <img src=".github/assets/settings_window.png" alt="Settings window screenshot" width="60%">
 
-## Wayland-native GTK4 overlay
+## Installation & Running (Wayland)
 
-This branch runs as a Wayland-native overlay using GTK4 + `gtk4-layer-shell`.
-On startup it auto-discovers ZMK devices, prefers serial transport when available, and keeps the overlay hidden until a non-base layer becomes active.
+This is a Wayland-native overlay built with GTK4 and `gtk4-layer-shell`. It works out-of-the-box on modern Wayland compositors.
 
-Build and install the binary as `~/.local/bin/keypeek-wayland`:
+### Quick Start
+
+Build the release binary:
 
 ```bash
 cargo build --release
-install -Dm755 target/release/keypeek "$HOME/.local/bin/keypeek-wayland"
 ```
 
-### Systemd user service
-
-A service template is included at `resources/keypeek-wayland.service`.
-Install and enable it:
+Run it directly:
 
 ```bash
+./target/release/keypeek
+```
+
+Or install to your local bin and run via systemd service (see below).
+
+### Install as Systemd User Service
+
+For convenience, install the binary and systemd user service:
+
+```bash
+install -Dm755 target/release/keypeek "$HOME/.local/bin/keypeek-wayland"
 install -Dm644 resources/keypeek-wayland.service "$HOME/.config/systemd/user/keypeek-wayland.service"
 systemctl --user daemon-reload
 systemctl --user enable --now keypeek-wayland.service
 ```
 
-### Udev rule for hidraw access
+Check status and logs:
 
-A rule template is included at `resources/99-keypeek.rules`.
-Install it and reload udev rules:
+```bash
+systemctl --user status keypeek-wayland.service
+journalctl --user -u keypeek-wayland.service -f
+```
+
+### Set Up Udev Rule (for ZMK/hidraw access)
+
+If you're using ZMK and the app can't access your keyboard, install the udev rule:
 
 ```bash
 sudo install -Dm644 resources/99-keypeek.rules /etc/udev/rules.d/99-keypeek.rules
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```
+
+Then reconnect your keyboard or restart the service.
 
 # License & Attribution
 
