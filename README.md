@@ -4,6 +4,8 @@
 
 This project is a **Wayland-focused adaptation of [the original KeyPeek project](https://github.com/srwi/keypeek)**, built around GTK4 and `gtk4-layer-shell`. It keeps the original idea while adding a Wayland-native overlay flow, tray controls, persistent positioning, scaling controls, and related UX improvements.
 
+ <img src=".github/assets/showcase.gif" alt="wl-KeyPeek showcase"/>
+
 ## Setup
 
 KeyPeek requires a small firmware module because stock QMK/Vial/ZMK firmware does not expose live layer-change events.
