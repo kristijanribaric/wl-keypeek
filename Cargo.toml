@@ -5,7 +5,7 @@ description = "Wayland-native GTK4 keyboard layer overlay for ZMK, VIA, and Vial
 authors = ["Kristijan Ribaric"]
 repository = "https://github.com/kristijanribaric/wl-keypeek"
 readme = "README.md"
-version = "0.5.0"
+version = "1.0.0"
 edition = "2021"
 
 [dependencies]
