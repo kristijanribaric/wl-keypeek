@@ -89,7 +89,7 @@ success "Systemd service installed"
 echo
 echo -e "${BOLD}Udev rule (ZMK / hidraw access)${RESET}"
 echo "  Required if you use a ZMK keyboard and the app can't see it."
-read -rp "  Install udev rule? Requires sudo. [y/N] " INSTALL_UDEV
+read -rp "  Install udev rule? Requires sudo. [y/N] " INSTALL_UDEV </dev/tty
 if [[ "${INSTALL_UDEV,,}" == "y" ]]; then
   info "Installing udev rule to ${UDEV_RULE_DST}..."
   echo 'SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1d50", MODE="0660", GROUP="input"' \
