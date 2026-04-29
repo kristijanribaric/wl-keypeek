@@ -114,7 +114,17 @@ The overlay is transparent, draggable, repositionable with scroll, and can also 
 
 This is a Wayland-native overlay built with GTK4 and `gtk4-layer-shell`. It works out-of-the-box on modern Wayland compositors.
 
-### Quick Start
+### Install via script (recommended)
+
+Downloads the latest release, installs the binary to `~/.local/bin`, sets up a systemd user service, and optionally installs the udev rule for ZMK keyboards.
+
+Requires `curl` and `jq`.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kristijanribaric/wl-keypeek/main/install.sh | bash
+```
+
+### Build from source
 
 Build the release binary:
 
@@ -125,7 +135,7 @@ cargo build --release
 Run it directly:
 
 ```bash
-./target/release/keypeek
+./target/release/wl-keypeek
 ```
 
 Or install to your local bin and run via systemd service (see below).
