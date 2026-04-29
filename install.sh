@@ -75,6 +75,7 @@ After=graphical-session.target
 PartOf=graphical-session.target
 
 [Service]
+ExecStartPre=/bin/sleep 5
 ExecStart=%h/.local/bin/${BINARY_NAME}
 Restart=on-failure
 RestartSec=3
